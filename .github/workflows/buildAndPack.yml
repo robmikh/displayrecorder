@@ -1,9 +1,14 @@
 name: Build and Pack
 
-on:
+#on:
+#  push:
+#    tags:
+#      - 'v*'
+
+on: 
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 env:
   RUSTFLAGS: -Dwarnings
