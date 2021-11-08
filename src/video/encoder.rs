@@ -265,8 +265,12 @@ impl VideoEncoder {
             // Start a seperate thread to drive the transform
             self.encoder_thread_handle = Some(std::thread::spawn(move || -> Result<()> {
                 unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
-                inner.encode()?;
-                Ok(())
+                let result = inner.encode();
+                if result.is_err() {
+                    print!("\nRecording stopped unexpectedly!\nPress ENTER to quit...");
+                    std::io::Write::flush(&mut std::io::stdout()).unwrap();
+                }
+                result
             }));
             result = true;
         }

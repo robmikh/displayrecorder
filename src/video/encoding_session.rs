@@ -36,8 +36,6 @@ use super::{
 pub struct VideoEncodingSession {
     video_encoder: VideoEncoder,
     sample_writer: Arc<SampleWriter>,
-    //is_recording: AtomicBool,
-    //stopped: AtomicBool,
 }
 
 struct SampleGenerator {

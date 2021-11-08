@@ -86,9 +86,6 @@ pub fn get_string_attribute(
 
 // These inlined helpers aren't represented in the metadata
 
-//pub const MF_API_VERSION: u32 = 0x0070;
-//pub const MF_VERSION: u32 = MF_API_VERSION << 16 | MF_API_VERSION;
-
 // This is the value for Win7+
 pub const MF_VERSION: u32 = 131184;
 
