@@ -4,10 +4,27 @@ mod displays;
 mod media;
 mod video;
 
-use std::{io::{stdin, stdout, Read, Write}, path::Path, time::Duration};
+use std::{
+    io::{stdin, stdout, Read, Write},
+    path::Path,
+    time::Duration,
+};
 
 use clap::{App, Arg};
-use windows::{Storage::{CreationCollisionOption, FileAccessMode, StorageFolder}, Win32::{Foundation::{MAX_PATH, PWSTR}, Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL}, Storage::FileSystem::GetFullPathNameW, System::{Diagnostics::Debug::{DebugBreak, IsDebuggerPresent}, Threading::GetCurrentProcessId, WinRT::{RoInitialize, RO_INIT_MULTITHREADED}}}, runtime::Result};
+use windows::{
+    runtime::Result,
+    Storage::{CreationCollisionOption, FileAccessMode, StorageFolder},
+    Win32::{
+        Foundation::{MAX_PATH, PWSTR},
+        Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
+        Storage::FileSystem::GetFullPathNameW,
+        System::{
+            Diagnostics::Debug::{DebugBreak, IsDebuggerPresent},
+            Threading::GetCurrentProcessId,
+            WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
+        },
+    },
+};
 
 use crate::{
     capture::create_capture_item_for_monitor,
@@ -17,14 +34,19 @@ use crate::{
     video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
 };
 
-fn run(display_index: usize, output_path: &str, verbose: bool, wait_for_debugger: bool) -> Result<()> {
+fn run(
+    display_index: usize,
+    output_path: &str,
+    verbose: bool,
+    wait_for_debugger: bool,
+) -> Result<()> {
     unsafe {
         RoInitialize(RO_INIT_MULTITHREADED)?;
     }
     unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
 
     if wait_for_debugger {
-        let pid = unsafe  { GetCurrentProcessId() };
+        let pid = unsafe { GetCurrentProcessId() };
         println!("Waiting for a debugger to attach (PID: {})...", pid);
         loop {
             if unsafe { IsDebuggerPresent().into() } {
@@ -151,7 +173,12 @@ fn main() {
     let verbose = matches.is_present("verbose");
     let wait_for_debugger = matches.is_present("waitForDebugger");
 
-    let result = run(monitor_index, output_path, verbose | wait_for_debugger, wait_for_debugger);
+    let result = run(
+        monitor_index,
+        output_path,
+        verbose | wait_for_debugger,
+        wait_for_debugger,
+    );
 
     // We do this for nicer HRESULT printing when errors occur.
     if let Err(error) = result {
