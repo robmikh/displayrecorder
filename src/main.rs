@@ -29,17 +29,19 @@ use crate::{
     video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
 };
 
-fn run(display_index: usize, output_path: &str) -> Result<()> {
+fn run(display_index: usize, output_path: &str, verbose: bool) -> Result<()> {
     unsafe {
         RoInitialize(RO_INIT_MULTITHREADED)?;
     }
     unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
 
-    // TODO: Remove
-    println!(
-        "Using index \"{}\" and path \"{}\".",
-        display_index, output_path
-    );
+    if verbose
+    {
+        println!(
+            "Using index \"{}\" and path \"{}\".",
+            display_index, output_path
+        );
+    }
 
     // Get the display handle using the provided index
     let display_handle = get_display_handle_from_index(display_index)
@@ -51,12 +53,16 @@ fn run(display_index: usize, output_path: &str) -> Result<()> {
     let bit_rate = 18000000;
     let frame_rate = 60;
     let encoder_devices = VideoEncoderDevice::enumerate()?;
-    // TODO: Remove
-    println!("Encoders ({}):", encoder_devices.len());
-    for encoder_device in &encoder_devices {
-        println!("  {}", encoder_device.display_name());
+    if verbose {
+        println!("Encoders ({}):", encoder_devices.len());
+        for encoder_device in &encoder_devices {
+            println!("  {}", encoder_device.display_name());
+        }
     }
     let encoder_device = &encoder_devices[0];
+    if verbose {
+        println!("Using: {}", encoder_device.display_name());
+    }
 
     let path = unsafe {
         let mut output_path: Vec<u16> = output_path.encode_utf16().collect();
@@ -120,6 +126,12 @@ fn main() {
                 .required(false),
         )
         .arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .help("Enables verbose (debug) output")
+                .required(false)
+        )
+        .arg(
             Arg::with_name("OUTPUT FILE")
                 .help("The output file that will contain the recording.")
                 .default_value("recording.mp4")
@@ -129,8 +141,9 @@ fn main() {
 
     let monitor_index: usize = matches.value_of("display").unwrap().parse().unwrap();
     let output_path = matches.value_of("OUTPUT FILE").unwrap();
+    let verbose = matches.is_present("verbose");
 
-    let result = run(monitor_index, output_path);
+    let result = run(monitor_index, output_path, verbose);
 
     // We do this for nicer HRESULT printing when errors occur.
     if let Err(error) = result {

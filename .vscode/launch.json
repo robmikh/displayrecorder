@@ -6,7 +6,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/displayrecorder.exe",
-            "args": [],
+            "args": [ "-v" ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
