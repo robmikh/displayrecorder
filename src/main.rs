@@ -4,22 +4,10 @@ mod displays;
 mod media;
 mod video;
 
-use std::{
-    io::{stdin, stdout, Read, Write},
-    path::Path,
-};
+use std::{io::{stdin, stdout, Read, Write}, path::Path, time::Duration};
 
 use clap::{App, Arg};
-use windows::{
-    runtime::Result,
-    Storage::{CreationCollisionOption, FileAccessMode, StorageFolder},
-    Win32::{
-        Foundation::{MAX_PATH, PWSTR},
-        Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
-        Storage::FileSystem::GetFullPathNameW,
-        System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
-    },
-};
+use windows::{Storage::{CreationCollisionOption, FileAccessMode, StorageFolder}, Win32::{Foundation::{MAX_PATH, PWSTR}, Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL}, Storage::FileSystem::GetFullPathNameW, System::{Diagnostics::Debug::{DebugBreak, IsDebuggerPresent}, Threading::GetCurrentProcessId, WinRT::{RoInitialize, RO_INIT_MULTITHREADED}}}, runtime::Result};
 
 use crate::{
     capture::create_capture_item_for_monitor,
@@ -29,11 +17,25 @@ use crate::{
     video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
 };
 
-fn run(display_index: usize, output_path: &str, verbose: bool) -> Result<()> {
+fn run(display_index: usize, output_path: &str, verbose: bool, wait_for_debugger: bool) -> Result<()> {
     unsafe {
         RoInitialize(RO_INIT_MULTITHREADED)?;
     }
     unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
+
+    if wait_for_debugger {
+        let pid = unsafe  { GetCurrentProcessId() };
+        println!("Waiting for a debugger to attach (PID: {})...", pid);
+        loop {
+            if unsafe { IsDebuggerPresent().into() } {
+                break;
+            }
+            std::thread::sleep(Duration::from_secs(1));
+        }
+        unsafe {
+            DebugBreak();
+        }
+    }
 
     if verbose {
         println!(
@@ -131,6 +133,12 @@ fn main() {
                 .required(false),
         )
         .arg(
+            Arg::with_name("waitForDebugger")
+                .long("waitForDebugger")
+                .help("The program will wait for a debugger to attach before starting.")
+                .required(false),
+        )
+        .arg(
             Arg::with_name("OUTPUT FILE")
                 .help("The output file that will contain the recording.")
                 .default_value("recording.mp4")
@@ -141,8 +149,9 @@ fn main() {
     let monitor_index: usize = matches.value_of("display").unwrap().parse().unwrap();
     let output_path = matches.value_of("OUTPUT FILE").unwrap();
     let verbose = matches.is_present("verbose");
+    let wait_for_debugger = matches.is_present("waitForDebugger");
 
-    let result = run(monitor_index, output_path, verbose);
+    let result = run(monitor_index, output_path, verbose | wait_for_debugger, wait_for_debugger);
 
     // We do this for nicer HRESULT printing when errors occur.
     if let Err(error) = result {
