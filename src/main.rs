@@ -35,8 +35,7 @@ fn run(display_index: usize, output_path: &str, verbose: bool) -> Result<()> {
     }
     unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
 
-    if verbose
-    {
+    if verbose {
         println!(
             "Using index \"{}\" and path \"{}\".",
             display_index, output_path
@@ -129,7 +128,7 @@ fn main() {
             Arg::with_name("verbose")
                 .short("v")
                 .help("Enables verbose (debug) output")
-                .required(false)
+                .required(false),
         )
         .arg(
             Arg::with_name("OUTPUT FILE")
