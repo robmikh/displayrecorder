@@ -18,8 +18,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        configuration: [Release]
-        platform: [x64]
+        target: [x86_64-pc-windows-msvc]
         rust: [stable]
     steps:
     - uses: actions/checkout@v2
@@ -40,5 +39,5 @@ jobs:
     - name: pack
       uses: actions/upload-artifact@v2
       with:
-        name: 'displayrecorder_${{ matrix.platform }}_${{ matrix.configuration }}'
-        path: '.\target\release\displayrecorder*'
+        name: 'displayrecorder_${{ matrix.target }}_release'
+        path: '.\target\${{ matrix.target }}\release\displayrecorder*'
