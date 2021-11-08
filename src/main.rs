@@ -1,24 +1,41 @@
 mod capture;
+mod d3d;
 mod displays;
-mod encoder;
+mod media;
+mod video;
+
+use std::{
+    io::{stdin, stdout, Read, Write},
+    path::Path,
+};
 
 use clap::{App, Arg};
 use windows::{
     runtime::Result,
-    Win32::System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
+    Storage::{CreationCollisionOption, FileAccessMode, StorageFolder},
+    Win32::{
+        Foundation::{MAX_PATH, PWSTR},
+        Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
+        Storage::FileSystem::GetFullPathNameW,
+        System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
+    },
 };
 
 use crate::{
-    capture::create_capture_item_for_monitor, displays::get_display_handle_from_index,
-    encoder::VideoEncoderDevice,
+    capture::create_capture_item_for_monitor,
+    d3d::create_d3d_device,
+    displays::get_display_handle_from_index,
+    media::MF_VERSION,
+    video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
 };
 
 fn run(display_index: usize, output_path: &str) -> Result<()> {
     unsafe {
         RoInitialize(RO_INIT_MULTITHREADED)?;
     }
+    unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
 
-    // TODO: remove
+    // TODO: Remove
     println!(
         "Using index \"{}\" and path \"{}\".",
         display_index, output_path
@@ -30,10 +47,58 @@ fn run(display_index: usize, output_path: &str) -> Result<()> {
     let item = create_capture_item_for_monitor(display_handle)?;
 
     // TODO: Make these encoding settings configurable
+    let resolution = item.Size()?;
+    let bit_rate = 18000000;
+    let frame_rate = 60;
     let encoder_devices = VideoEncoderDevice::enumerate()?;
+    // TODO: Remove
     println!("Encoders ({}):", encoder_devices.len());
     for encoder_device in &encoder_devices {
         println!("  {}", encoder_device.display_name());
+    }
+    let encoder_device = &encoder_devices[0];
+
+    let path = unsafe {
+        let mut output_path: Vec<u16> = output_path.encode_utf16().collect();
+        output_path.push(0);
+        let mut new_path = vec![0u16; MAX_PATH as usize];
+        let length = GetFullPathNameW(
+            PWSTR(output_path.as_mut_ptr()),
+            new_path.len() as u32,
+            PWSTR(new_path.as_mut_ptr()),
+            std::ptr::null_mut(),
+        );
+        new_path.resize(length as usize, 0);
+        String::from_utf16(&new_path).unwrap()
+    };
+    let path = Path::new(&path);
+    let parent_folder_path = path.parent().unwrap();
+    let parent_folder =
+        StorageFolder::GetFolderFromPathAsync(parent_folder_path.as_os_str().to_str().unwrap())?
+            .get()?;
+    let file_name = path.file_name().unwrap();
+    let file = parent_folder
+        .CreateFileAsync(
+            file_name.to_str().unwrap(),
+            CreationCollisionOption::ReplaceExisting,
+        )?
+        .get()?;
+
+    {
+        let stream = file.OpenAsync(FileAccessMode::ReadWrite)?.get()?;
+        let d3d_device = create_d3d_device()?;
+        let mut session = VideoEncodingSession::new(
+            d3d_device,
+            item,
+            encoder_device,
+            resolution,
+            bit_rate,
+            frame_rate,
+            stream,
+        )?;
+        session.start()?;
+        pause();
+        session.stop()?;
     }
 
     Ok(())
@@ -71,4 +136,11 @@ fn main() {
     if let Err(error) = result {
         error.code().unwrap();
     }
+}
+
+fn pause() {
+    let mut stdout = stdout();
+    stdout.write(b"Press ENTER to stop recording...").unwrap();
+    stdout.flush().unwrap();
+    stdin().read(&mut [0]).unwrap();
 }

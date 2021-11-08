@@ -1,58 +1,13 @@
 use windows::{
-    runtime::{Interface, Result, GUID},
+    runtime::{Result, GUID},
     Win32::{
         Foundation::PWSTR,
         Media::MediaFoundation::{
-            IMFActivate, IMFAttributes, MFMediaType_Video, MFTEnumEx, MFT_FRIENDLY_NAME_Attribute,
-            MFVideoFormat_H264, MFT_CATEGORY_VIDEO_ENCODER, MFT_ENUM_FLAG_HARDWARE,
-            MFT_ENUM_FLAG_SORTANDFILTER, MFT_ENUM_FLAG_TRANSCODE_ONLY, MFT_REGISTER_TYPE_INFO,
-            MF_E_ATTRIBUTENOTFOUND,
+            IMFActivate, IMFAttributes, MFTEnumEx, MFT_REGISTER_TYPE_INFO, MF_E_ATTRIBUTENOTFOUND,
         },
         System::Com::CoTaskMemFree,
     },
 };
-
-pub struct VideoEncoderDevice {
-    source: IMFActivate,
-    display_name: String,
-}
-
-impl VideoEncoderDevice {
-    pub fn enumerate() -> Result<Vec<VideoEncoderDevice>> {
-        let output_info = MFT_REGISTER_TYPE_INFO {
-            guidMajorType: MFMediaType_Video,
-            guidSubtype: MFVideoFormat_H264,
-        };
-        let encoders = enumerate_mfts(
-            &MFT_CATEGORY_VIDEO_ENCODER,
-            (MFT_ENUM_FLAG_HARDWARE.0
-                | MFT_ENUM_FLAG_TRANSCODE_ONLY.0
-                | MFT_ENUM_FLAG_SORTANDFILTER.0) as u32,
-            None,
-            Some(&output_info),
-        )?;
-        let mut encoder_devices = Vec::new();
-        for encoder in encoders {
-            let display_name = if let Some(display_name) =
-                get_string_attribute(&encoder.cast()?, &MFT_FRIENDLY_NAME_Attribute)?
-            {
-                display_name
-            } else {
-                "Unknown".to_owned()
-            };
-            let encoder_device = VideoEncoderDevice {
-                source: encoder,
-                display_name,
-            };
-            encoder_devices.push(encoder_device);
-        }
-        Ok(encoder_devices)
-    }
-
-    pub fn display_name(&self) -> &str {
-        &self.display_name
-    }
-}
 
 fn type_info_to_ptr(type_info: Option<&MFT_REGISTER_TYPE_INFO>) -> *const MFT_REGISTER_TYPE_INFO {
     if let Some(type_info) = type_info {
@@ -62,7 +17,7 @@ fn type_info_to_ptr(type_info: Option<&MFT_REGISTER_TYPE_INFO>) -> *const MFT_RE
     }
 }
 
-fn enumerate_mfts(
+pub fn enumerate_mfts(
     category: &GUID,
     flags: u32,
     input_type: Option<&MFT_REGISTER_TYPE_INFO>,
@@ -101,7 +56,7 @@ fn enumerate_mfts(
     Ok(transform_sources)
 }
 
-fn get_string_attribute(
+pub fn get_string_attribute(
     attributes: &IMFAttributes,
     attribute_guid: &GUID,
 ) -> Result<Option<String>> {
@@ -127,4 +82,46 @@ fn get_string_attribute(
             }
         }
     }
+}
+
+// These inlined helpers aren't represented in the metadata
+
+//pub const MF_API_VERSION: u32 = 0x0070;
+//pub const MF_VERSION: u32 = MF_API_VERSION << 16 | MF_API_VERSION;
+
+// This is the value for Win7+
+pub const MF_VERSION: u32 = 131184;
+
+fn pack_2_u32_as_u64(high: u32, low: u32) -> u64 {
+    ((high as u64) << 32) | low as u64
+}
+
+#[allow(non_snake_case)]
+unsafe fn MFSetAttribute2UINT32asUINT64(
+    attributes: &IMFAttributes,
+    key: &GUID,
+    high: u32,
+    low: u32,
+) -> Result<()> {
+    attributes.SetUINT64(key, pack_2_u32_as_u64(high, low))
+}
+
+#[allow(non_snake_case)]
+pub unsafe fn MFSetAttributeSize(
+    attributes: &IMFAttributes,
+    key: &GUID,
+    width: u32,
+    height: u32,
+) -> Result<()> {
+    MFSetAttribute2UINT32asUINT64(attributes, key, width, height)
+}
+
+#[allow(non_snake_case)]
+pub unsafe fn MFSetAttributeRatio(
+    attributes: &IMFAttributes,
+    key: &GUID,
+    numerator: u32,
+    denominator: u32,
+) -> Result<()> {
+    MFSetAttribute2UINT32asUINT64(attributes, key, numerator, denominator)
 }
