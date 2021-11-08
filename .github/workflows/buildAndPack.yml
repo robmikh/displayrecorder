@@ -28,13 +28,13 @@ jobs:
         profile: minimal
         override: true
         components: rustfmt
+    
+    - name: build
+      run: cargo build --release --target ${{ matrix.target }}
 
     - name: fmt
       run: cargo fmt --all -- --check
       if: matrix.rust == 'stable'
-    
-    - name: build
-      run: cargo build --release
 
     - name: pack
       uses: actions/upload-artifact@v2
