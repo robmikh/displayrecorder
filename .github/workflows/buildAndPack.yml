@@ -1,5 +1,10 @@
 name: Build and Pack
 
+on:
+  push:
+    tags:
+      - 'v*'
+
 env:
   RUSTFLAGS: -Dwarnings
 
