@@ -1,5 +1,6 @@
 use windows::runtime::{Abi, Interface, Result};
 use windows::Graphics::DirectX::Direct3D11::IDirect3DDevice;
+use windows::Win32::Graphics::Direct3D11::D3D11_CREATE_DEVICE_DEBUG;
 use windows::Win32::Graphics::{
     Direct3D11::{
         D3D11CreateDevice, ID3D11Device, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
@@ -35,18 +36,17 @@ fn create_d3d_device_with_type(
 
 pub fn create_d3d_device() -> Result<ID3D11Device> {
     let mut device = None;
-    let mut result = create_d3d_device_with_type(
-        D3D_DRIVER_TYPE_HARDWARE,
-        D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-        &mut device,
-    );
+    let flags = {
+        let mut flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+        if cfg!(feature = "d3ddebug") {
+            flags |= D3D11_CREATE_DEVICE_DEBUG;
+        }
+        flags
+    };
+    let mut result = create_d3d_device_with_type(D3D_DRIVER_TYPE_HARDWARE, flags, &mut device);
     if let Err(error) = &result {
         if error.code() == DXGI_ERROR_UNSUPPORTED {
-            result = create_d3d_device_with_type(
-                D3D_DRIVER_TYPE_WARP,
-                D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-                &mut device,
-            );
+            result = create_d3d_device_with_type(D3D_DRIVER_TYPE_WARP, flags, &mut device);
         }
     }
     result?;

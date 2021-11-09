@@ -31,3 +31,6 @@ features = [
     "Win32_System_Threading",
     "Win32_System_WinRT",
 ]
+
+[features]
+d3ddebug = []

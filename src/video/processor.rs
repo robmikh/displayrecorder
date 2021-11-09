@@ -209,7 +209,7 @@ fn compute_scale_factor(output_size: Vector2, input_size: Vector2) -> f32 {
     let output_ratio = output_size.X / output_size.Y;
     let input_ratio = input_size.X / input_size.Y;
 
-    let mut scale_factor = output_size.X / input_size.Y;
+    let mut scale_factor = output_size.X / input_size.X;
     if output_ratio > input_ratio {
         scale_factor = output_size.Y / input_size.Y;
     }

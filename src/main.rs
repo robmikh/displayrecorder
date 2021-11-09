@@ -2,6 +2,7 @@ mod capture;
 mod d3d;
 mod displays;
 mod media;
+mod resolution;
 mod video;
 
 use std::{
@@ -33,12 +34,16 @@ use crate::{
     d3d::create_d3d_device,
     displays::get_display_handle_from_index,
     media::MF_VERSION,
+    resolution::Resolution,
     video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
 };
 
 fn run(
     display_index: usize,
     output_path: &str,
+    bit_rate: u32,
+    frame_rate: u32,
+    resolution: Resolution,
     verbose: bool,
     wait_for_debugger: bool,
 ) -> Result<()> {
@@ -78,10 +83,13 @@ fn run(
         .expect("The provided display index was out of bounds!");
     let item = create_capture_item_for_monitor(display_handle)?;
 
-    // TODO: Make these encoding settings configurable
-    let resolution = item.Size()?;
-    let bit_rate = 18000000;
-    let frame_rate = 60;
+    // Resolve encoding settings
+    let resolution = if let Some(resolution) = resolution.get_size() {
+        resolution
+    } else {
+        item.Size()?
+    };
+    let bit_rate = bit_rate * 1000000;
     let encoder_devices = VideoEncoderDevice::enumerate()?;
     if encoder_devices.is_empty() {
         exit_with_error("No hardware H264 encoders found!");
@@ -92,6 +100,7 @@ fn run(
             println!("  {}", encoder_device.display_name());
         }
     }
+    // TODO: Allow configurable encoder selection
     let encoder_device = &encoder_devices[0];
     if verbose {
         println!("Using: {}", encoder_device.display_name());
@@ -161,6 +170,36 @@ fn main() {
                 .required(false),
         )
         .arg(
+            Arg::with_name("bitRate")
+                .short("b")
+                .long("bitRate")
+                .value_name("bit rate (in Mbps)")
+                .help("The bit rate you would like to encode at (in Mbps).")
+                .takes_value(true)
+                .default_value("18")
+                .required(false),
+        )
+        .arg(
+            Arg::with_name("frameRate")
+                .short("f")
+                .long("frameRate")
+                .value_name("frame rate")
+                .help("The frame rate you would like to encode at.")
+                .takes_value(true)
+                .default_value("60")
+                .required(false),
+        )
+        .arg(
+            Arg::with_name("resolution")
+                .short("r")
+                .long("resolution")
+                .value_name("resolution enum")
+                .help("The resolution you would like to encode at: native, 720p, 1080p, 2160p, or 4320p.")
+                .takes_value(true)
+                .default_value("native")
+                .required(false),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
                 .help("Enables verbose (debug) output.")
@@ -188,10 +227,29 @@ fn main() {
 
     let matches = app.get_matches();
 
-    let monitor_index: usize = matches.value_of("display").unwrap().parse().unwrap();
+    let monitor_index: usize = matches
+        .value_of("display")
+        .unwrap()
+        .parse()
+        .expect("Invalid diplay index value!");
     let output_path = matches.value_of("OUTPUT FILE").unwrap();
     let verbose = matches.is_present("verbose");
     let wait_for_debugger = matches.is_present("waitForDebugger");
+    let bit_rate: u32 = matches
+        .value_of("bitRate")
+        .unwrap()
+        .parse()
+        .expect("Invalid bit rate value!");
+    let frame_rate: u32 = matches
+        .value_of("frameRate")
+        .unwrap()
+        .parse()
+        .expect("Invalid frame rate value!");
+    let resolution: Resolution = matches
+        .value_of("resolution")
+        .unwrap()
+        .parse()
+        .expect("Invalid resolution value! Expecting: native, 720p, 1080p, 2160p, or 4320p.");
 
     // Validate some of the params
     if !validate_path(output_path) {
@@ -201,6 +259,9 @@ fn main() {
     let result = run(
         monitor_index,
         &output_path,
+        bit_rate,
+        frame_rate,
+        resolution,
         verbose | wait_for_debugger,
         wait_for_debugger,
     );
