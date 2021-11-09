@@ -12,7 +12,9 @@ use std::{
 
 use clap::{App, Arg};
 use windows::{
-    runtime::Result,
+    runtime::{Result, RuntimeName},
+    Foundation::Metadata::ApiInformation,
+    Graphics::Capture::GraphicsCaptureSession,
     Storage::{CreationCollisionOption, FileAccessMode, StorageFolder},
     Win32::{
         Foundation::{MAX_PATH, PWSTR},
@@ -59,6 +61,11 @@ fn run(
         }
     }
 
+    // Check to make sure Windows.Graphics.Capture is available
+    if !required_capture_features_supported()? {
+        exit_with_error("The required screen capture features are not supported on this device for this release of Windows!\nPlease update your operating system (minimum: Windows 10 Version 1903, Build 18362).");
+    }
+
     if verbose {
         println!(
             "Using index \"{}\" and path \"{}\".",
@@ -76,6 +83,9 @@ fn run(
     let bit_rate = 18000000;
     let frame_rate = 60;
     let encoder_devices = VideoEncoderDevice::enumerate()?;
+    if encoder_devices.is_empty() {
+        exit_with_error("No hardware H264 encoders found!");
+    }
     if verbose {
         println!("Encoders ({}):", encoder_devices.len());
         for encoder_device in &encoder_devices {
@@ -87,6 +97,7 @@ fn run(
         println!("Using: {}", encoder_device.display_name());
     }
 
+    // Create our file
     let path = unsafe {
         let mut output_path: Vec<u16> = output_path.encode_utf16().collect();
         output_path.push(0);
@@ -134,7 +145,7 @@ fn run(
 }
 
 fn main() {
-    let matches = App::new(env!("CARGO_PKG_NAME"))
+    let mut app = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
@@ -151,7 +162,7 @@ fn main() {
         .arg(
             Arg::with_name("verbose")
                 .short("v")
-                .help("Enables verbose (debug) output")
+                .help("Enables verbose (debug) output.")
                 .required(false),
         )
         .arg(
@@ -165,13 +176,26 @@ fn main() {
                 .help("The output file that will contain the recording.")
                 .default_value("recording.mp4")
                 .required(false),
-        )
-        .get_matches();
+        );
+
+    // Handle /?
+    let args: Vec<_> = std::env::args().collect();
+    if args.contains(&"/?".to_owned()) {
+        app.print_help().unwrap();
+        std::process::exit(0);
+    }
+
+    let matches = app.get_matches();
 
     let monitor_index: usize = matches.value_of("display").unwrap().parse().unwrap();
     let output_path = matches.value_of("OUTPUT FILE").unwrap();
     let verbose = matches.is_present("verbose");
     let wait_for_debugger = matches.is_present("waitForDebugger");
+
+    // Validate some of the params
+    if !validate_path(output_path) {
+        exit_with_error("Invalid path specified!");
+    }
 
     let result = run(
         monitor_index,
@@ -191,4 +215,25 @@ fn pause() {
     stdout.write(b"Press ENTER to stop recording...").unwrap();
     stdout.flush().unwrap();
     stdin().read(&mut [0]).unwrap();
+}
+
+fn validate_path<P: AsRef<Path>>(path: P) -> bool {
+    let path = path.as_ref();
+    path.is_file()
+}
+
+fn exit_with_error(message: &str) {
+    println!("{}", message);
+    std::process::exit(1);
+}
+
+fn win32_programmatic_capture_supported() -> Result<bool> {
+    ApiInformation::IsApiContractPresentByMajor("Windows.Foundation.UniversalApiContract", 8)
+}
+
+fn required_capture_features_supported() -> Result<bool> {
+    let result = ApiInformation::IsTypePresent(GraphicsCaptureSession::NAME)? && // Windows.Graphics.Capture is present
+    GraphicsCaptureSession::IsSupported()? && // The CaptureService is available
+    win32_programmatic_capture_supported()?;
+    Ok(result)
 }
