@@ -239,7 +239,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name("enum-encoders")
-            .about("Lists the available H264 hardware encoders.")
+            .about("Lists the available hardware H264 encoders.")
         );
 
     // Handle /?
