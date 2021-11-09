@@ -124,6 +124,7 @@ fn run(
         )?
         .get()?;
 
+    // Start the recording
     {
         let stream = file.OpenAsync(FileAccessMode::ReadWrite)?.get()?;
         let d3d_device = create_d3d_device()?;

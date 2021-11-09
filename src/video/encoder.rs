@@ -7,7 +7,7 @@ use std::{
 };
 
 use windows::{
-    runtime::{Interface, Result},
+    runtime::{Error, Interface, Result},
     Foundation::TimeSpan,
     Graphics::SizeInt32,
     Win32::{
@@ -22,7 +22,7 @@ use windows::{
             MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, MFT_MESSAGE_NOTIFY_END_OF_STREAM,
             MFT_MESSAGE_NOTIFY_END_STREAMING, MFT_MESSAGE_NOTIFY_START_OF_STREAM,
             MFT_MESSAGE_SET_D3D_MANAGER, MFT_OUTPUT_DATA_BUFFER, MFT_SET_TYPE_TEST_ONLY,
-            MF_EVENT_TYPE, MF_E_INVALIDMEDIATYPE, MF_E_NO_MORE_TYPES,
+            MF_EVENT_TYPE, MF_E_INVALIDMEDIATYPE, MF_E_NO_MORE_TYPES, MF_E_TRANSFORM_TYPE_NOT_SET,
             MF_MT_ALL_SAMPLES_INDEPENDENT, MF_MT_AVG_BITRATE, MF_MT_FRAME_RATE, MF_MT_FRAME_SIZE,
             MF_MT_INTERLACE_MODE, MF_MT_MAJOR_TYPE, MF_MT_PIXEL_ASPECT_RATIO, MF_MT_SUBTYPE,
             MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, MF_TRANSFORM_ASYNC_UNLOCK,
@@ -217,9 +217,14 @@ impl VideoEncoder {
                 break Some(input_type);
             }
         };
-        // TOOD: return error
-        let input_type = input_type.expect("No suitable input type found!");
-        unsafe { transform.SetInputType(input_stream_id, &input_type, 0)? };
+        if let Some(input_type) = input_type {
+            unsafe { transform.SetInputType(input_stream_id, &input_type, 0)? };
+        } else {
+            return Err(Error::new(
+                MF_E_TRANSFORM_TYPE_NOT_SET,
+                "No suitable input type found! Try a different set of encoding settings.",
+            ));
+        }
 
         let should_stop = Arc::new(AtomicBool::new(false));
         let inner = VideoEncoderInner {
