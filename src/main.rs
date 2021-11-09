@@ -11,7 +11,7 @@ use std::{
     time::Duration,
 };
 
-use clap::{App, Arg};
+use clap::{App, Arg, SubCommand};
 use windows::{
     runtime::{Result, RuntimeName},
     Foundation::Metadata::ApiInformation,
@@ -50,6 +50,7 @@ fn run(
     bit_rate: u32,
     frame_rate: u32,
     resolution: Resolution,
+    encoder_index: usize,
     verbose: bool,
     wait_for_debugger: bool,
 ) -> Result<()> {
@@ -106,8 +107,11 @@ fn run(
             println!("  {}", encoder_device.display_name());
         }
     }
-    // TODO: Allow configurable encoder selection
-    let encoder_device = &encoder_devices[0];
+    let encoder_device = if let Some(encoder_device) = encoder_devices.get(encoder_index) {
+        encoder_device
+    } else {
+        exit_with_error("Encoder index is out of bounds!");
+    };
     if verbose {
         println!("Using: {}", encoder_device.display_name());
     }
@@ -206,6 +210,16 @@ fn main() {
                 .required(false),
         )
         .arg(
+            Arg::with_name("encoder")
+                .short("e")
+                .long("encoder")
+                .value_name("encoder index")
+                .help("The index of the encoder you'd like to use to record (use enum-encoders command for a list of encoders and their indices).")
+                .takes_value(true)
+                .default_value("0")
+                .required(false),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
                 .help("Enables verbose (debug) output.")
@@ -222,6 +236,10 @@ fn main() {
                 .help("The output file that will contain the recording.")
                 .default_value("recording.mp4")
                 .required(false),
+        )
+        .subcommand(
+            SubCommand::with_name("enum-encoders")
+            .about("Lists the available H264 hardware encoders.")
         );
 
     // Handle /?
@@ -232,6 +250,13 @@ fn main() {
     }
 
     let matches = app.get_matches();
+
+    if let Some(name) = matches.subcommand_name() {
+        if name == "enum-encoders" {
+            enum_encoders().unwrap();
+            return;
+        }
+    }
 
     let monitor_index: usize = matches
         .value_of("display")
@@ -256,6 +281,11 @@ fn main() {
         .unwrap()
         .parse()
         .expect("Invalid resolution value! Expecting: native, 720p, 1080p, 2160p, or 4320p.");
+    let encoder_index: usize = matches
+        .value_of("encoder")
+        .unwrap()
+        .parse()
+        .expect("Invalid encoder index value!");
 
     // Validate some of the params
     if !validate_path(output_path) {
@@ -268,6 +298,7 @@ fn main() {
         bit_rate,
         frame_rate,
         resolution,
+        encoder_index,
         verbose | wait_for_debugger,
         wait_for_debugger,
     );
@@ -276,6 +307,18 @@ fn main() {
     if let Err(error) = result {
         error.code().unwrap();
     }
+}
+
+fn enum_encoders() -> Result<()> {
+    let encoder_devices = VideoEncoderDevice::enumerate()?;
+    if encoder_devices.is_empty() {
+        exit_with_error("No hardware H264 encoders found!");
+    }
+    println!("Encoders ({}):", encoder_devices.len());
+    for (i, encoder_device) in encoder_devices.iter().enumerate() {
+        println!("  {} - {}", i, encoder_device.display_name());
+    }
+    Ok(())
 }
 
 fn create_encoding_session(
@@ -320,7 +363,7 @@ fn validate_path<P: AsRef<Path>>(path: P) -> bool {
     valid
 }
 
-fn exit_with_error(message: &str) {
+fn exit_with_error(message: &str) -> ! {
     println!("{}", message);
     std::process::exit(1);
 }
