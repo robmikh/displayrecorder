@@ -6,7 +6,7 @@ mod resolution;
 mod video;
 
 use std::{
-    io::{stdin, stdout, Read, Write},
+    io::{stdin, Read},
     path::Path,
     time::Duration,
 };
@@ -15,10 +15,16 @@ use clap::{App, Arg};
 use windows::{
     runtime::{Result, RuntimeName},
     Foundation::Metadata::ApiInformation,
-    Graphics::Capture::GraphicsCaptureSession,
-    Storage::{CreationCollisionOption, FileAccessMode, StorageFolder},
+    Graphics::{
+        Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
+        SizeInt32,
+    },
+    Storage::{
+        CreationCollisionOption, FileAccessMode, StorageFolder, Streams::IRandomAccessStream,
+    },
     Win32::{
         Foundation::{MAX_PATH, PWSTR},
+        Graphics::Direct3D11::ID3D11Device,
         Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
         Storage::FileSystem::GetFullPathNameW,
         System::{
@@ -137,7 +143,7 @@ fn run(
     {
         let stream = file.OpenAsync(FileAccessMode::ReadWrite)?.get()?;
         let d3d_device = create_d3d_device()?;
-        let mut session = VideoEncodingSession::new(
+        let mut session = create_encoding_session(
             d3d_device,
             item,
             encoder_device,
@@ -272,10 +278,32 @@ fn main() {
     }
 }
 
+fn create_encoding_session(
+    d3d_device: ID3D11Device,
+    item: GraphicsCaptureItem,
+    encoder_device: &VideoEncoderDevice,
+    resolution: SizeInt32,
+    bit_rate: u32,
+    frame_rate: u32,
+    stream: IRandomAccessStream,
+) -> Result<VideoEncodingSession> {
+    let result = VideoEncodingSession::new(
+        d3d_device,
+        item,
+        encoder_device,
+        resolution,
+        bit_rate,
+        frame_rate,
+        stream,
+    );
+    if result.is_err() {
+        println!("Error during encoder setup, try another set of encoding settings.");
+    }
+    result
+}
+
 fn pause() {
-    let mut stdout = stdout();
-    stdout.write(b"Press ENTER to stop recording...").unwrap();
-    stdout.flush().unwrap();
+    println!("Press ENTER to stop recording...");
     stdin().read(&mut [0]).unwrap();
 }
 

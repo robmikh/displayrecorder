@@ -272,8 +272,7 @@ impl VideoEncoder {
                 unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
                 let result = inner.encode();
                 if result.is_err() {
-                    print!("\nRecording stopped unexpectedly!\nPress ENTER to quit...");
-                    std::io::Write::flush(&mut std::io::stdout()).unwrap();
+                    println!("Recording stopped unexpectedly!\nPress ENTER to quit...");
                 }
                 result
             }));
