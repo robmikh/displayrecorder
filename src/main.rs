@@ -200,7 +200,7 @@ fn main() {
 
     let result = run(
         monitor_index,
-        output_path,
+        &output_path,
         verbose | wait_for_debugger,
         wait_for_debugger,
     );
@@ -220,7 +220,15 @@ fn pause() {
 
 fn validate_path<P: AsRef<Path>>(path: P) -> bool {
     let path = path.as_ref();
-    path.is_file()
+    let mut valid = true;
+    if let Some(extension) = path.extension() {
+        if extension != "mp4" {
+            valid = false;
+        }
+    } else {
+        valid = false;
+    }
+    valid
 }
 
 fn exit_with_error(message: &str) {
@@ -237,4 +245,24 @@ fn required_capture_features_supported() -> Result<bool> {
     GraphicsCaptureSession::IsSupported()? && // The CaptureService is available
     win32_programmatic_capture_supported()?;
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::validate_path;
+
+    #[test]
+    fn path_parsing_test() {
+        assert!(validate_path("something.mp4"));
+        assert!(validate_path("somedir/something.mp4"));
+        assert!(validate_path("somedir\\something.mp4"));
+        assert!(validate_path("../something.mp4"));
+
+        assert!(!validate_path("."));
+        assert!(!validate_path("*"));
+        assert!(!validate_path("something"));
+        assert!(!validate_path(".mp4"));
+        assert!(!validate_path("mp4"));
+        assert!(!validate_path("something.avi"));
+    }
 }
