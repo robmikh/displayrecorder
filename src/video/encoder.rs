@@ -272,7 +272,7 @@ impl VideoEncoder {
                 unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL)? }
                 let result = inner.encode();
                 if result.is_err() {
-                    println!("Recording stopped unexpectedly!\nPress ENTER to quit...");
+                    println!("Recording stopped unexpectedly!");
                 }
                 result
             }));
