@@ -3,7 +3,7 @@ use windows::{
     core::Result,
     Win32::{
         Foundation::HWND,
-        UI::Input::KeyboardAndMouse::{RegisterHotKey, UnregisterHotKey, MOD_CONTROL, MOD_SHIFT},
+        UI::Input::KeyboardAndMouse::{RegisterHotKey, UnregisterHotKey, HOT_KEY_MODIFIERS},
     },
 };
 
@@ -14,11 +14,10 @@ pub struct HotKey {
 }
 
 impl HotKey {
-    // TODO: Allow caller to specify key-combo
-    pub fn new() -> Result<Self> {
+    pub fn new(modifiers: HOT_KEY_MODIFIERS, key: u32) -> Result<Self> {
         let id = unsafe { HOT_KEY_ID.fetch_add(1, Ordering::SeqCst) + 1 };
         unsafe {
-            RegisterHotKey(HWND(0), id, MOD_SHIFT | MOD_CONTROL, 0x52 /* R */).ok()?;
+            RegisterHotKey(HWND(0), id, modifiers, key).ok()?;
         }
         Ok(Self { id })
     }

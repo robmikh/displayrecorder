@@ -30,7 +30,10 @@ use windows::{
             Threading::GetCurrentProcessId,
             WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
         },
-        UI::WindowsAndMessaging::{DispatchMessageW, GetMessageW, MSG, WM_HOTKEY},
+        UI::{
+            Input::KeyboardAndMouse::{MOD_CONTROL, MOD_SHIFT},
+            WindowsAndMessaging::{DispatchMessageW, GetMessageW, MSG, WM_HOTKEY},
+        },
     },
 };
 
@@ -403,7 +406,7 @@ fn required_capture_features_supported() -> Result<bool> {
 }
 
 fn pump_messages<F: FnMut() -> Result<bool>>(mut hot_key_callback: F) -> Result<()> {
-    let _hot_key = HotKey::new()?;
+    let _hot_key = HotKey::new(MOD_SHIFT | MOD_CONTROL, 0x52 /* R */)?;
     println!("Press SHIFT+CTRL+R to start/stop the recording...");
     unsafe {
         let mut message = MSG::default();
