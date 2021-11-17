@@ -52,6 +52,7 @@ fn run(
     encoder_index: usize,
     verbose: bool,
     wait_for_debugger: bool,
+    console_mode: bool,
 ) -> Result<()> {
     unsafe {
         RoInitialize(RO_INIT_MULTITHREADED)?;
@@ -156,18 +157,23 @@ fn run(
             frame_rate,
             stream,
         )?;
-        let mut is_recording = false;
-        pump_messages(|| -> Result<bool> {
-            Ok(if !is_recording {
-                is_recording = true;
-                println!("Starting recording...");
-                session.start()?;
-                false
-            } else {
-                true
-            })
-        })?;
-        println!("Stopping recording...");
+        if !console_mode {
+            let mut is_recording = false;
+            pump_messages(|| -> Result<bool> {
+                Ok(if !is_recording {
+                    is_recording = true;
+                    println!("Starting recording...");
+                    session.start()?;
+                    false
+                } else {
+                    true
+                })
+            })?;
+            println!("Stopping recording...");
+        } else {
+            session.start()?;
+            pause();
+        }
         session.stop()?;
     }
 
@@ -242,6 +248,12 @@ fn main() {
                 .required(false),
         )
         .arg(
+            Arg::with_name("consoleMode")
+                .long("consoleMode")
+                .help("Recording immediately starts. End the recording through console input.")
+                .required(false),
+        )
+        .arg(
             Arg::with_name("OUTPUT FILE")
                 .help("The output file that will contain the recording.")
                 .default_value("recording.mp4")
@@ -276,6 +288,7 @@ fn main() {
     let output_path = matches.value_of("OUTPUT FILE").unwrap();
     let verbose = matches.is_present("verbose");
     let wait_for_debugger = matches.is_present("waitForDebugger");
+    let console_mode = matches.is_present("consoleMode");
     let bit_rate: u32 = matches
         .value_of("bitRate")
         .unwrap()
@@ -311,12 +324,18 @@ fn main() {
         encoder_index,
         verbose | wait_for_debugger,
         wait_for_debugger,
+        console_mode,
     );
 
     // We do this for nicer HRESULT printing when errors occur.
     if let Err(error) = result {
         error.code().unwrap();
     }
+}
+
+fn pause() {
+    println!("Press ENTER to stop recording...");
+    std::io::Read::read(&mut std::io::stdin(), &mut [0]).unwrap();
 }
 
 fn enum_encoders() -> Result<()> {
