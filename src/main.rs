@@ -6,10 +6,7 @@ mod media;
 mod resolution;
 mod video;
 
-use std::{
-    path::Path,
-    time::Duration,
-};
+use std::{path::Path, time::Duration};
 
 use clap::{App, Arg, SubCommand};
 use hotkey::HotKey;

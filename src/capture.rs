@@ -72,7 +72,6 @@ impl CaptureFrameWait {
                 }
             }),
         )?;
-        session.StartCapture()?;
 
         Ok(Self {
             _d3d_device: d3d_device,
@@ -83,6 +82,10 @@ impl CaptureFrameWait {
             sender,
             receiver,
         })
+    }
+
+    pub fn session(&self) -> &GraphicsCaptureSession {
+        &self.session
     }
 
     pub fn try_get_next_frame(&mut self) -> Result<Option<CaptureFrame>> {

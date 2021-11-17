@@ -3,7 +3,10 @@ use std::sync::Arc;
 use windows::{
     runtime::Result,
     Foundation::TimeSpan,
-    Graphics::{Capture::GraphicsCaptureItem, SizeInt32},
+    Graphics::{
+        Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
+        SizeInt32,
+    },
     Storage::Streams::IRandomAccessStream,
     Win32::{
         Foundation::PWSTR,
@@ -35,6 +38,7 @@ use super::{
 
 pub struct VideoEncodingSession {
     video_encoder: VideoEncoder,
+    capture_session: GraphicsCaptureSession,
     sample_writer: Arc<SampleWriter>,
 }
 
@@ -83,6 +87,7 @@ impl VideoEncodingSession {
         let output_type = video_encoder.output_type().clone();
 
         let mut sample_generator = SampleGenerator::new(d3d_device, item, input_size, output_size)?;
+        let capture_session = sample_generator.capture_session().clone();
         video_encoder.set_sample_requested_callback(
             move || -> Result<Option<VideoEncoderInputSample>> { sample_generator.generate() },
         );
@@ -95,12 +100,14 @@ impl VideoEncodingSession {
 
         Ok(Self {
             video_encoder,
+            capture_session,
             sample_writer,
         })
     }
 
     pub fn start(&mut self) -> Result<()> {
         self.sample_writer.start()?;
+        self.capture_session.StartCapture()?;
         assert!(self.video_encoder.try_start()?);
         Ok(())
     }
@@ -168,6 +175,10 @@ impl SampleGenerator {
             seen_first_time_stamp: false,
             first_timestamp: TimeSpan::default(),
         })
+    }
+
+    pub fn capture_session(&self) -> &GraphicsCaptureSession {
+        self.frame_wait.session()
     }
 
     pub fn generate(&mut self) -> Result<Option<VideoEncoderInputSample>> {
