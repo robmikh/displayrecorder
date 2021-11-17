@@ -4,7 +4,7 @@ use windows::{
     runtime::Result,
     Foundation::TimeSpan,
     Graphics::{
-        Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
+        Capture::{Direct3D11CaptureFrame, GraphicsCaptureItem, GraphicsCaptureSession},
         SizeInt32,
     },
     Storage::Streams::IRandomAccessStream,
@@ -25,10 +25,7 @@ use windows::{
     },
 };
 
-use crate::{
-    capture::{CaptureFrame, CaptureFrameWait},
-    d3d::get_d3d_interface_from_object,
-};
+use crate::{capture::CaptureFrameGenerator, d3d::get_d3d_interface_from_object};
 
 use super::{
     encoder::{VideoEncoder, VideoEncoderInputSample},
@@ -50,7 +47,7 @@ struct SampleGenerator {
     compose_texture: ID3D11Texture2D,
     render_target_view: ID3D11RenderTargetView,
 
-    frame_wait: CaptureFrameWait,
+    frame_generator: CaptureFrameGenerator,
 
     seen_first_time_stamp: bool,
     first_timestamp: TimeSpan,
@@ -160,7 +157,7 @@ impl SampleGenerator {
         let render_target_view =
             unsafe { d3d_device.CreateRenderTargetView(&compose_texture, std::ptr::null())? };
 
-        let frame_wait = CaptureFrameWait::new(d3d_device.clone(), item, input_size)?;
+        let frame_generator = CaptureFrameGenerator::new(d3d_device.clone(), item, input_size)?;
 
         Ok(Self {
             d3d_device,
@@ -170,7 +167,7 @@ impl SampleGenerator {
             compose_texture,
             render_target_view,
 
-            frame_wait,
+            frame_generator,
 
             seen_first_time_stamp: false,
             first_timestamp: TimeSpan::default(),
@@ -178,11 +175,11 @@ impl SampleGenerator {
     }
 
     pub fn capture_session(&self) -> &GraphicsCaptureSession {
-        self.frame_wait.session()
+        self.frame_generator.session()
     }
 
     pub fn generate(&mut self) -> Result<Option<VideoEncoderInputSample>> {
-        if let Some(frame) = self.frame_wait.try_get_next_frame()? {
+        if let Some(frame) = self.frame_generator.try_get_next_frame()? {
             let result = self.generate_from_frame(&frame);
             match result {
                 Ok(sample) => Ok(Some(sample)),
@@ -203,20 +200,25 @@ impl SampleGenerator {
     }
 
     fn stop_capture(&mut self) -> Result<()> {
-        self.frame_wait.stop_capture()
+        self.frame_generator.stop_capture()
     }
 
-    fn generate_from_frame(&mut self, frame: &CaptureFrame) -> Result<VideoEncoderInputSample> {
+    fn generate_from_frame(
+        &mut self,
+        frame: &Direct3D11CaptureFrame,
+    ) -> Result<VideoEncoderInputSample> {
+        let frame_time = frame.SystemRelativeTime()?;
+
         if !self.seen_first_time_stamp {
-            self.first_timestamp = frame.system_relative_time;
+            self.first_timestamp = frame_time;
             self.seen_first_time_stamp = true;
         }
 
         let timestamp = TimeSpan {
-            Duration: frame.system_relative_time.Duration - self.first_timestamp.Duration,
+            Duration: frame_time.Duration - self.first_timestamp.Duration,
         };
-        let content_size = frame.content_size;
-        let frame_texture: ID3D11Texture2D = get_d3d_interface_from_object(&frame.frame_texture)?;
+        let content_size = frame.ContentSize()?;
+        let frame_texture: ID3D11Texture2D = get_d3d_interface_from_object(&frame.Surface()?)?;
         let desc = unsafe {
             let mut desc = D3D11_TEXTURE2D_DESC::default();
             frame_texture.GetDesc(&mut desc);
@@ -269,6 +271,9 @@ impl SampleGenerator {
             let sample_texture = self.d3d_device.CreateTexture2D(&desc, std::ptr::null())?;
             self.d3d_context
                 .CopyResource(&sample_texture, video_output_texture);
+
+            // Release the frame back to the frame pool
+            frame.Close()?;
 
             Ok(VideoEncoderInputSample::new(timestamp, sample_texture))
         }
