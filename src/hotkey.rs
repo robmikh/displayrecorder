@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicI32, Ordering};
 use windows::{
-    runtime::Result,
+    core::Result,
     Win32::{
         Foundation::HWND,
         UI::Input::KeyboardAndMouse::{RegisterHotKey, UnregisterHotKey, MOD_SHIFT, MOD_WIN},
@@ -14,10 +14,11 @@ pub struct HotKey {
 }
 
 impl HotKey {
+    // TODO: Allow caller to specify key-combo
     pub fn new() -> Result<Self> {
         let id = unsafe { HOT_KEY_ID.fetch_add(1, Ordering::SeqCst) + 1 };
         unsafe {
-            RegisterHotKey(HWND(0), id, MOD_SHIFT | MOD_WIN, 0x52).ok()?;
+            RegisterHotKey(HWND(0), id, MOD_SHIFT | MOD_WIN, 0x52 /* R */).ok()?;
         }
         Ok(Self { id })
     }

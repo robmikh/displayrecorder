@@ -11,7 +11,7 @@ use std::{path::Path, time::Duration};
 use clap::{App, Arg, SubCommand};
 use hotkey::HotKey;
 use windows::{
-    runtime::{Result, RuntimeName},
+    core::{Result, RuntimeName, HSTRING},
     Foundation::Metadata::ApiInformation,
     Graphics::{
         Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
@@ -131,13 +131,14 @@ fn run(
     };
     let path = Path::new(&path);
     let parent_folder_path = path.parent().unwrap();
-    let parent_folder =
-        StorageFolder::GetFolderFromPathAsync(parent_folder_path.as_os_str().to_str().unwrap())?
-            .get()?;
+    let parent_folder = StorageFolder::GetFolderFromPathAsync::<HSTRING>(
+        parent_folder_path.as_os_str().to_str().unwrap().into(),
+    )?
+    .get()?;
     let file_name = path.file_name().unwrap();
     let file = parent_folder
-        .CreateFileAsync(
-            file_name.to_str().unwrap(),
+        .CreateFileAsync::<HSTRING>(
+            file_name.to_str().unwrap().into(),
             CreationCollisionOption::ReplaceExisting,
         )?
         .get()?;
@@ -373,11 +374,14 @@ fn exit_with_error(message: &str) -> ! {
 }
 
 fn win32_programmatic_capture_supported() -> Result<bool> {
-    ApiInformation::IsApiContractPresentByMajor("Windows.Foundation.UniversalApiContract", 8)
+    ApiInformation::IsApiContractPresentByMajor::<HSTRING>(
+        "Windows.Foundation.UniversalApiContract".into(),
+        8,
+    )
 }
 
 fn required_capture_features_supported() -> Result<bool> {
-    let result = ApiInformation::IsTypePresent(GraphicsCaptureSession::NAME)? && // Windows.Graphics.Capture is present
+    let result = ApiInformation::IsTypePresent::<HSTRING>(GraphicsCaptureSession::NAME.into())? && // Windows.Graphics.Capture is present
     GraphicsCaptureSession::IsSupported()? && // The CaptureService is available
     win32_programmatic_capture_supported()?;
     Ok(result)

@@ -1,7 +1,7 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
 use windows::{
-    runtime::{IInspectable, Result},
+    core::{IInspectable, Result},
     Foundation::TypedEventHandler,
     Graphics::{
         Capture::{
@@ -13,14 +13,14 @@ use windows::{
     },
     Win32::{
         Graphics::{Direct3D11::ID3D11Device, Gdi::HMONITOR},
-        System::WinRT::IGraphicsCaptureItemInterop,
+        System::WinRT::Graphics::Capture::IGraphicsCaptureItemInterop,
     },
 };
 
 use crate::d3d::create_direct3d_device;
 
 pub fn create_capture_item_for_monitor(monitor_handle: HMONITOR) -> Result<GraphicsCaptureItem> {
-    let interop = windows::runtime::factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>()?;
+    let interop = windows::core::factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>()?;
     unsafe { interop.CreateForMonitor(monitor_handle) }
 }
 

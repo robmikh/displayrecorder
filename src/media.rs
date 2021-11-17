@@ -1,5 +1,5 @@
 use windows::{
-    runtime::{Result, GUID},
+    core::{Result, GUID},
     Win32::{
         Foundation::PWSTR,
         Media::MediaFoundation::{

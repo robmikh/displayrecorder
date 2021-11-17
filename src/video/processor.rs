@@ -1,5 +1,5 @@
 use windows::{
-    runtime::{Interface, Result},
+    core::{Interface, Result},
     Foundation::Numerics::Vector2,
     Graphics::{RectInt32, SizeInt32},
     Win32::{
@@ -18,7 +18,7 @@ use windows::{
                 D3D11_VIDEO_USAGE_OPTIMAL_QUALITY, D3D11_VPIV_DIMENSION_TEXTURE2D,
                 D3D11_VPOV_DIMENSION_TEXTURE2D,
             },
-            Dxgi::{DXGI_FORMAT, DXGI_RATIONAL, DXGI_SAMPLE_DESC},
+            Dxgi::Common::{DXGI_FORMAT, DXGI_RATIONAL, DXGI_SAMPLE_DESC},
         },
     },
 };

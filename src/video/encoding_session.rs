@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use windows::{
-    runtime::Result,
+    core::Result,
     Foundation::TimeSpan,
     Graphics::{
         Capture::{Direct3D11CaptureFrame, GraphicsCaptureItem, GraphicsCaptureSession},
@@ -16,7 +16,7 @@ use windows::{
                 D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX,
                 D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
             },
-            Dxgi::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_NV12, DXGI_SAMPLE_DESC},
+            Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_NV12, DXGI_SAMPLE_DESC},
         },
         Media::MediaFoundation::{
             IMFMediaType, IMFSample, IMFSinkWriter, MFCreateAttributes,
