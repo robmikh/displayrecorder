@@ -4,6 +4,7 @@ mod displays;
 mod media;
 mod resolution;
 mod video;
+mod hotkey;
 
 use std::{
     io::{stdin, Read},
@@ -12,28 +13,17 @@ use std::{
 };
 
 use clap::{App, Arg, SubCommand};
-use windows::{
-    runtime::{Result, RuntimeName},
-    Foundation::Metadata::ApiInformation,
-    Graphics::{
+use hotkey::HotKey;
+use windows::{Foundation::Metadata::ApiInformation, Graphics::{
         Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
         SizeInt32,
-    },
-    Storage::{
+    }, Storage::{
         CreationCollisionOption, FileAccessMode, StorageFolder, Streams::IRandomAccessStream,
-    },
-    Win32::{
-        Foundation::{MAX_PATH, PWSTR},
-        Graphics::Direct3D11::ID3D11Device,
-        Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
-        Storage::FileSystem::GetFullPathNameW,
-        System::{
+    }, Win32::{Foundation::{HWND, MAX_PATH, PWSTR}, Graphics::Direct3D11::ID3D11Device, Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL}, Storage::FileSystem::GetFullPathNameW, System::{
             Diagnostics::Debug::{DebugBreak, IsDebuggerPresent},
             Threading::GetCurrentProcessId,
             WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
-        },
-    },
-};
+        }, UI::WindowsAndMessaging::{DispatchMessageW, GetMessageW, MSG, WM_HOTKEY}}, runtime::{Result, RuntimeName}};
 
 use crate::{
     capture::create_capture_item_for_monitor,
@@ -156,8 +146,20 @@ fn run(
             frame_rate,
             stream,
         )?;
-        session.start()?;
-        pause();
+        //session.start()?;
+        //pause();
+        let mut is_recording = false;
+        pump_messages(|| -> Result<bool> {
+            Ok(if !is_recording {
+                is_recording = true;
+                println!("Starting recording...");
+                session.start()?;
+                false
+            } else {
+                true
+            })
+        })?;
+        println!("Stopping recording...");
         session.stop()?;
     }
 
@@ -378,6 +380,23 @@ fn required_capture_features_supported() -> Result<bool> {
     win32_programmatic_capture_supported()?;
     Ok(result)
 }
+
+fn pump_messages<F: FnMut() -> Result<bool>>(mut hot_key_callback: F) -> Result<()> {
+    let _hot_key = HotKey::new()?;
+    println!("Press WIN+SHIFT+R to start/stop the recording...");
+    unsafe {
+        let mut message = MSG::default();
+        while GetMessageW(&mut message, HWND(0), 0, 0).into() {
+            if message.message == WM_HOTKEY {
+                if hot_key_callback()? {
+                    break;
+                }
+            }
+            DispatchMessageW(&mut message);
+        }
+    }
+    Ok(())
+} 
 
 #[cfg(test)]
 mod tests {
