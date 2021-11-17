@@ -404,7 +404,7 @@ fn required_capture_features_supported() -> Result<bool> {
 
 fn pump_messages<F: FnMut() -> Result<bool>>(mut hot_key_callback: F) -> Result<()> {
     let _hot_key = HotKey::new()?;
-    println!("Press WIN+SHIFT+R to start/stop the recording...");
+    println!("Press SHIFT+CTRL+R to start/stop the recording...");
     unsafe {
         let mut message = MSG::default();
         while GetMessageW(&mut message, HWND(0), 0, 0).into() {
