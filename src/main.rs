@@ -1,29 +1,41 @@
 mod capture;
 mod d3d;
 mod displays;
+mod hotkey;
 mod media;
 mod resolution;
 mod video;
-mod hotkey;
 
 use std::{
-    io::{stdin, Read},
     path::Path,
     time::Duration,
 };
 
 use clap::{App, Arg, SubCommand};
 use hotkey::HotKey;
-use windows::{Foundation::Metadata::ApiInformation, Graphics::{
+use windows::{
+    runtime::{Result, RuntimeName},
+    Foundation::Metadata::ApiInformation,
+    Graphics::{
         Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
         SizeInt32,
-    }, Storage::{
+    },
+    Storage::{
         CreationCollisionOption, FileAccessMode, StorageFolder, Streams::IRandomAccessStream,
-    }, Win32::{Foundation::{HWND, MAX_PATH, PWSTR}, Graphics::Direct3D11::ID3D11Device, Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL}, Storage::FileSystem::GetFullPathNameW, System::{
+    },
+    Win32::{
+        Foundation::{HWND, MAX_PATH, PWSTR},
+        Graphics::Direct3D11::ID3D11Device,
+        Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
+        Storage::FileSystem::GetFullPathNameW,
+        System::{
             Diagnostics::Debug::{DebugBreak, IsDebuggerPresent},
             Threading::GetCurrentProcessId,
             WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
-        }, UI::WindowsAndMessaging::{DispatchMessageW, GetMessageW, MSG, WM_HOTKEY}}, runtime::{Result, RuntimeName}};
+        },
+        UI::WindowsAndMessaging::{DispatchMessageW, GetMessageW, MSG, WM_HOTKEY},
+    },
+};
 
 use crate::{
     capture::create_capture_item_for_monitor,
@@ -146,8 +158,6 @@ fn run(
             frame_rate,
             stream,
         )?;
-        //session.start()?;
-        //pause();
         let mut is_recording = false;
         pump_messages(|| -> Result<bool> {
             Ok(if !is_recording {
@@ -347,11 +357,6 @@ fn create_encoding_session(
     result
 }
 
-fn pause() {
-    println!("Press ENTER to stop recording...");
-    stdin().read(&mut [0]).unwrap();
-}
-
 fn validate_path<P: AsRef<Path>>(path: P) -> bool {
     let path = path.as_ref();
     let mut valid = true;
@@ -396,7 +401,7 @@ fn pump_messages<F: FnMut() -> Result<bool>>(mut hot_key_callback: F) -> Result<
         }
     }
     Ok(())
-} 
+}
 
 #[cfg(test)]
 mod tests {
