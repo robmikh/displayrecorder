@@ -45,9 +45,13 @@ pub fn enumerate_mfts(
                 std::slice::from_raw_parts(mfactivate_list, num_mfactivate as usize);
             for mfactivate in mfactivate_slice {
                 let transform_source = mfactivate.clone();
+                // This is a dirty trick we play so that we can
+                // release the underlying IMFActivate despite having
+                // a shared reference.
+                let temp: windows::core::IUnknown = std::mem::transmute_copy(&transform_source.0);
                 transform_sources.push(transform_source);
                 // We need to release each item
-                std::mem::drop(mfactivate)
+                std::mem::drop(temp)
             }
             // Free the memory that was allocated for the list
             CoTaskMemFree(mfactivate_list as *const _);
