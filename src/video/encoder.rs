@@ -121,12 +121,8 @@ impl VideoEncoder {
         let (input_stream_ids, output_stream_ids) = {
             let mut input_stream_ids = vec![0u32; number_of_input_streams as usize];
             let mut output_stream_ids = vec![0u32; number_of_output_streams as usize];
-            let result = unsafe {
-                transform.GetStreamIDs(
-                    &mut input_stream_ids,
-                    &mut output_stream_ids,
-                )
-            };
+            let result =
+                unsafe { transform.GetStreamIDs(&mut input_stream_ids, &mut output_stream_ids) };
             match result {
                 Ok(_) => {}
                 Err(error) => {

@@ -67,11 +67,7 @@ pub fn get_string_attribute(
         match attributes.GetStringLength(attribute_guid) {
             Ok(mut length) => {
                 let mut result = vec![0u16; (length + 1) as usize];
-                attributes.GetString(
-                    attribute_guid,
-                    &mut result,
-                    &mut length,
-                )?;
+                attributes.GetString(attribute_guid, &mut result, &mut length)?;
                 result.resize(length as usize, 0);
                 Ok(Some(String::from_utf16(&result).unwrap()))
             }
