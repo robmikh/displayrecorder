@@ -1,7 +1,6 @@
 use windows::{
     core::{Result, GUID},
     Win32::{
-        Foundation::PWSTR,
         Media::MediaFoundation::{
             IMFActivate, IMFAttributes, MFTEnumEx, MFT_REGISTER_TYPE_INFO, MF_E_ATTRIBUTENOTFOUND,
         },
@@ -48,7 +47,7 @@ pub fn enumerate_mfts(
                 // This is a dirty trick we play so that we can
                 // release the underlying IMFActivate despite having
                 // a shared reference.
-                let temp: windows::core::IUnknown = std::mem::transmute_copy(&transform_source.0);
+                let temp: windows::core::IUnknown = std::mem::transmute_copy(&transform_source);
                 transform_sources.push(transform_source);
                 // We need to release each item
                 std::mem::drop(temp)
@@ -70,8 +69,7 @@ pub fn get_string_attribute(
                 let mut result = vec![0u16; (length + 1) as usize];
                 attributes.GetString(
                     attribute_guid,
-                    PWSTR(result.as_ptr() as *mut _),
-                    result.len() as u32,
+                    &mut result,
                     &mut length,
                 )?;
                 result.resize(length as usize, 0);

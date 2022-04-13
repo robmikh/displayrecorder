@@ -198,8 +198,7 @@ impl VideoProcessor {
                 &self.video_processor,
                 &self.video_output,
                 0,
-                1,
-                &video_stream,
+                &[video_stream],
             )
         }
     }

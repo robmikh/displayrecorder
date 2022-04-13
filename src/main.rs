@@ -21,7 +21,7 @@ use windows::{
         CreationCollisionOption, FileAccessMode, StorageFolder, Streams::IRandomAccessStream,
     },
     Win32::{
-        Foundation::{HWND, MAX_PATH, PWSTR},
+        Foundation::{HWND, MAX_PATH},
         Graphics::Direct3D11::ID3D11Device,
         Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
         Storage::FileSystem::GetFullPathNameW,
@@ -121,13 +121,10 @@ fn run(
 
     // Create our file
     let path = unsafe {
-        let mut output_path: Vec<u16> = output_path.encode_utf16().collect();
-        output_path.push(0);
         let mut new_path = vec![0u16; MAX_PATH as usize];
         let length = GetFullPathNameW(
-            PWSTR(output_path.as_mut_ptr()),
-            new_path.len() as u32,
-            PWSTR(new_path.as_mut_ptr()),
+            output_path,
+            &mut new_path,
             std::ptr::null_mut(),
         );
         new_path.resize(length as usize, 0);

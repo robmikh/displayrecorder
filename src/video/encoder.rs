@@ -123,10 +123,8 @@ impl VideoEncoder {
             let mut output_stream_ids = vec![0u32; number_of_output_streams as usize];
             let result = unsafe {
                 transform.GetStreamIDs(
-                    number_of_input_streams,
-                    input_stream_ids.as_mut_ptr(),
-                    number_of_output_streams,
-                    output_stream_ids.as_mut_ptr(),
+                    &mut input_stream_ids,
+                    &mut output_stream_ids,
                 )
             };
             match result {
@@ -393,15 +391,16 @@ impl VideoEncoderInner {
 
     fn on_transform_output_ready(&mut self) -> Result<()> {
         let mut status = 0;
-        let mut output_buffer = MFT_OUTPUT_DATA_BUFFER {
+        let output_buffer = MFT_OUTPUT_DATA_BUFFER {
             dwStreamID: self.output_stream_id,
             ..Default::default()
         };
 
         let sample = unsafe {
+            let mut output_buffers = [output_buffer];
             self.transform
-                .ProcessOutput(0, 1, &mut output_buffer, &mut status)?;
-            output_buffer.pSample.unwrap()
+                .ProcessOutput(0, &mut output_buffers, &mut status)?;
+            output_buffers[0].pSample.as_ref().unwrap().clone()
         };
 
         let output_sample = VideoEncoderOutputSample { sample };

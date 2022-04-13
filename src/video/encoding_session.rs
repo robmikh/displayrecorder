@@ -9,7 +9,6 @@ use windows::{
     },
     Storage::Streams::IRandomAccessStream,
     Win32::{
-        Foundation::PWSTR,
         Graphics::{
             Direct3D11::{
                 ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11Texture2D,
@@ -291,9 +290,7 @@ impl SampleWriter {
         };
         let sink_writer = unsafe {
             let byte_stream = MFCreateMFByteStreamOnStreamEx(&stream)?;
-            let mut url: Vec<u16> = ".mp4".encode_utf16().collect();
-            url.push(0);
-            MFCreateSinkWriterFromURL(PWSTR(url.as_mut_ptr()), byte_stream, &empty_attributes)?
+            MFCreateSinkWriterFromURL(".mp4", byte_stream, &empty_attributes)?
         };
         let sink_writer_stream_index = unsafe { sink_writer.AddStream(output_type)? };
         unsafe {
