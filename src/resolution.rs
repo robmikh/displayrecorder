@@ -1,4 +1,4 @@
-use std::{str::FromStr, fmt::Display};
+use std::{fmt::Display, str::FromStr};
 
 use windows::Graphics::SizeInt32;
 
@@ -24,7 +24,9 @@ impl FromStr for Resolution {
             "1080p" => Ok(Resolution::_1080p),
             "2160p" => Ok(Resolution::_2160p),
             "4320p" => Ok(Resolution::_4320p),
-            _ => Err(ParseResolutionError("Invalid resolution value! Expecting: native, 720p, 1080p, 2160p, or 4320p.")),
+            _ => Err(ParseResolutionError(
+                "Invalid resolution value! Expecting: native, 720p, 1080p, 2160p, or 4320p.",
+            )),
         }
     }
 }
