@@ -1,3 +1,4 @@
+mod args;
 mod capture;
 mod d3d;
 mod displays;
@@ -8,7 +9,8 @@ mod video;
 
 use std::{path::Path, time::Duration};
 
-use clap::{App, Arg, SubCommand};
+use args::Args;
+use clap::Parser;
 use hotkey::HotKey;
 use windows::{
     core::{Result, RuntimeName},
@@ -176,134 +178,31 @@ fn run(
 }
 
 fn main() {
-    let mut app = App::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .arg(
-            Arg::with_name("display")
-                .short("d")
-                .long("display")
-                .value_name("display index")
-                .help("The index of the display you'd like to record.")
-                .takes_value(true)
-                .default_value("0")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("bitRate")
-                .short("b")
-                .long("bitRate")
-                .value_name("bit rate (in Mbps)")
-                .help("The bit rate you would like to encode at (in Mbps).")
-                .takes_value(true)
-                .default_value("18")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("frameRate")
-                .short("f")
-                .long("frameRate")
-                .value_name("frame rate")
-                .help("The frame rate you would like to encode at.")
-                .takes_value(true)
-                .default_value("60")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("resolution")
-                .short("r")
-                .long("resolution")
-                .value_name("resolution enum")
-                .help("The resolution you would like to encode at: native, 720p, 1080p, 2160p, or 4320p.")
-                .takes_value(true)
-                .default_value("native")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("encoder")
-                .short("e")
-                .long("encoder")
-                .value_name("encoder index")
-                .help("The index of the encoder you'd like to use to record (use enum-encoders command for a list of encoders and their indices).")
-                .takes_value(true)
-                .default_value("0")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("verbose")
-                .short("v")
-                .help("Enables verbose (debug) output.")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("waitForDebugger")
-                .long("waitForDebugger")
-                .help("The program will wait for a debugger to attach before starting.")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("consoleMode")
-                .long("consoleMode")
-                .help("Recording immediately starts. End the recording through console input.")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("OUTPUT FILE")
-                .help("The output file that will contain the recording.")
-                .default_value("recording.mp4")
-                .required(false),
-        )
-        .subcommand(
-            SubCommand::with_name("enum-encoders")
-            .about("Lists the available hardware H264 encoders.")
-        );
-
     // Handle /?
     let args: Vec<_> = std::env::args().collect();
-    if args.contains(&"/?".to_owned()) {
-        app.print_help().unwrap();
+    if args.contains(&"/?".to_owned()) || args.contains(&"-?".to_owned()) {
+        Args::parse_from(&["--help"]);
         std::process::exit(0);
     }
 
-    let matches = app.get_matches();
+    let args = Args::parse();
 
-    if let Some(name) = matches.subcommand_name() {
-        if name == "enum-encoders" {
-            enum_encoders().unwrap();
-            return;
+    if let Some(command) = args.command {
+        match command {
+            args::Commands::EnumEncoders => enum_encoders().unwrap(),
         }
+        return;
     }
 
-    let monitor_index: usize = matches
-        .value_of("display")
-        .unwrap()
-        .parse()
-        .expect("Invalid diplay index value!");
-    let output_path = matches.value_of("OUTPUT FILE").unwrap();
-    let verbose = matches.is_present("verbose");
-    let wait_for_debugger = matches.is_present("waitForDebugger");
-    let console_mode = matches.is_present("consoleMode");
-    let bit_rate: u32 = matches
-        .value_of("bitRate")
-        .unwrap()
-        .parse()
-        .expect("Invalid bit rate value!");
-    let frame_rate: u32 = matches
-        .value_of("frameRate")
-        .unwrap()
-        .parse()
-        .expect("Invalid frame rate value!");
-    let resolution: Resolution = matches
-        .value_of("resolution")
-        .unwrap()
-        .parse()
-        .expect("Invalid resolution value! Expecting: native, 720p, 1080p, 2160p, or 4320p.");
-    let encoder_index: usize = matches
-        .value_of("encoder")
-        .unwrap()
-        .parse()
-        .expect("Invalid encoder index value!");
+    let monitor_index: usize = args.display;
+    let output_path = args.output_file.as_str();
+    let verbose = args.verbose;
+    let wait_for_debugger = args.wait_for_debugger;
+    let console_mode = args.console_mode;
+    let bit_rate: u32 = args.bit_rate;
+    let frame_rate: u32 = args.frame_rate;
+    let resolution: Resolution = args.resolution;
+    let encoder_index: usize = args.encoder;
 
     // Validate some of the params
     if !validate_path(output_path) {

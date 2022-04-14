@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, fmt::Display};
 
 use windows::Graphics::SizeInt32;
 
@@ -12,7 +12,7 @@ pub enum Resolution {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct ParseResolutionError;
+pub struct ParseResolutionError(&'static str);
 
 impl FromStr for Resolution {
     type Err = ParseResolutionError;
@@ -24,10 +24,30 @@ impl FromStr for Resolution {
             "1080p" => Ok(Resolution::_1080p),
             "2160p" => Ok(Resolution::_2160p),
             "4320p" => Ok(Resolution::_4320p),
-            _ => Err(Self::Err {}),
+            _ => Err(ParseResolutionError("Invalid resolution value! Expecting: native, 720p, 1080p, 2160p, or 4320p.")),
         }
     }
 }
+
+impl Display for Resolution {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = match self {
+            Resolution::Native => "native",
+            Resolution::_720p => "720p",
+            Resolution::_1080p => "1080p",
+            Resolution::_2160p => "2160p",
+            Resolution::_4320p => "4320p",
+        };
+        write!(f, "{}", string)
+    }
+}
+
+impl Display for ParseResolutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+impl std::error::Error for ParseResolutionError {}
 
 impl Resolution {
     pub fn get_size(&self) -> Option<SizeInt32> {
