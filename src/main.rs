@@ -181,7 +181,7 @@ fn main() {
     // Handle /?
     let args: Vec<_> = std::env::args().collect();
     if args.contains(&"/?".to_owned()) || args.contains(&"-?".to_owned()) {
-        Args::parse_from(&["--help"]);
+        Args::parse_from(&["displayrecorder.exe", "--help"]);
         std::process::exit(0);
     }
 
