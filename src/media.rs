@@ -2,7 +2,8 @@ use windows::{
     core::{Result, GUID},
     Win32::{
         Media::MediaFoundation::{
-            IMFActivate, IMFAttributes, MFTEnumEx, MFT_REGISTER_TYPE_INFO, MF_E_ATTRIBUTENOTFOUND,
+            IMFActivate, IMFAttributes, MFTEnumEx, MFT_ENUM_FLAG, MFT_REGISTER_TYPE_INFO,
+            MF_E_ATTRIBUTENOTFOUND,
         },
         System::Com::CoTaskMemFree,
     },
@@ -28,7 +29,7 @@ pub fn enumerate_mfts(
     unsafe {
         MFTEnumEx(
             category,
-            flags,
+            MFT_ENUM_FLAG(flags),
             type_info_to_ptr(input_type),
             type_info_to_ptr(output_type),
             &mut mfactivate_list,
