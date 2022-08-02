@@ -28,7 +28,7 @@ pub fn enumerate_mfts(
     let mut num_mfactivate = 0;
     unsafe {
         MFTEnumEx(
-            category,
+            *category,
             MFT_ENUM_FLAG(flags),
             type_info_to_ptr(input_type),
             type_info_to_ptr(output_type),

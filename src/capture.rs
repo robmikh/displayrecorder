@@ -41,7 +41,7 @@ impl CaptureFrameGenerator {
     ) -> Result<Self> {
         let device = create_direct3d_device(&d3d_device)?;
         let frame_pool = Direct3D11CaptureFramePool::CreateFreeThreaded(
-            device,
+            &device,
             DirectXPixelFormat::B8G8R8A8UIntNormalized,
             2,
             size,
@@ -50,7 +50,7 @@ impl CaptureFrameGenerator {
 
         let (sender, receiver) = channel();
         frame_pool.FrameArrived(
-            TypedEventHandler::<Direct3D11CaptureFramePool, IInspectable>::new({
+            &TypedEventHandler::<Direct3D11CaptureFramePool, IInspectable>::new({
                 let session = session.clone();
                 let sender = sender.clone();
                 move |frame_pool, _| {

@@ -54,7 +54,7 @@ pub fn create_d3d_device() -> Result<ID3D11Device> {
 
 pub fn create_direct3d_device(d3d_device: &ID3D11Device) -> Result<IDirect3DDevice> {
     let dxgi_device: IDXGIDevice = d3d_device.cast()?;
-    let inspectable = unsafe { CreateDirect3D11DeviceFromDXGIDevice(Some(dxgi_device))? };
+    let inspectable = unsafe { CreateDirect3D11DeviceFromDXGIDevice(Some(&dxgi_device))? };
     inspectable.cast()
 }
 

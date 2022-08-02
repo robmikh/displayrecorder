@@ -13,7 +13,7 @@ use args::Args;
 use clap::Parser;
 use hotkey::HotKey;
 use windows::{
-    core::{Result, RuntimeName},
+    core::{Result, RuntimeName, HSTRING},
     Foundation::Metadata::ApiInformation,
     Graphics::{
         Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
@@ -124,19 +124,24 @@ fn run(
     // Create our file
     let path = unsafe {
         let mut new_path = vec![0u16; MAX_PATH as usize];
-        let length = GetFullPathNameW(output_path, &mut new_path, std::ptr::null_mut());
+        let length = GetFullPathNameW(
+            &HSTRING::from(output_path),
+            &mut new_path,
+            std::ptr::null_mut(),
+        );
         new_path.resize(length as usize, 0);
         String::from_utf16(&new_path).unwrap()
     };
     let path = Path::new(&path);
     let parent_folder_path = path.parent().unwrap();
-    let parent_folder =
-        StorageFolder::GetFolderFromPathAsync(parent_folder_path.as_os_str().to_str().unwrap())?
-            .get()?;
+    let parent_folder = StorageFolder::GetFolderFromPathAsync(&HSTRING::from(
+        parent_folder_path.as_os_str().to_str().unwrap(),
+    ))?
+    .get()?;
     let file_name = path.file_name().unwrap();
     let file = parent_folder
         .CreateFileAsync(
-            file_name.to_str().unwrap(),
+            &HSTRING::from(file_name.to_str().unwrap()),
             CreationCollisionOption::ReplaceExisting,
         )?
         .get()?;
@@ -287,11 +292,14 @@ fn exit_with_error(message: &str) -> ! {
 }
 
 fn win32_programmatic_capture_supported() -> Result<bool> {
-    ApiInformation::IsApiContractPresentByMajor("Windows.Foundation.UniversalApiContract", 8)
+    ApiInformation::IsApiContractPresentByMajor(
+        &HSTRING::from("Windows.Foundation.UniversalApiContract"),
+        8,
+    )
 }
 
 fn required_capture_features_supported() -> Result<bool> {
-    let result = ApiInformation::IsTypePresent(GraphicsCaptureSession::NAME)? && // Windows.Graphics.Capture is present
+    let result = ApiInformation::IsTypePresent(&HSTRING::from(GraphicsCaptureSession::NAME))? && // Windows.Graphics.Capture is present
     GraphicsCaptureSession::IsSupported()? && // The CaptureService is available
     win32_programmatic_capture_supported()?;
     Ok(result)

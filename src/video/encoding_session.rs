@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use windows::{
-    core::Result,
+    core::{Result, HSTRING},
     Foundation::TimeSpan,
     Graphics::{
         Capture::{Direct3D11CaptureFrame, GraphicsCaptureItem, GraphicsCaptureSession},
@@ -290,7 +290,7 @@ impl SampleWriter {
         };
         let sink_writer = unsafe {
             let byte_stream = MFCreateMFByteStreamOnStreamEx(&stream)?;
-            MFCreateSinkWriterFromURL(".mp4", byte_stream, &empty_attributes)?
+            MFCreateSinkWriterFromURL(&HSTRING::from(".mp4"), &byte_stream, &empty_attributes)?
         };
         let sink_writer_stream_index = unsafe { sink_writer.AddStream(output_type)? };
         unsafe {

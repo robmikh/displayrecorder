@@ -370,14 +370,14 @@ impl VideoEncoderInner {
         if !self.should_stop.load(Ordering::SeqCst) {
             if let Some(sample) = self.sample_requested_callback.as_mut().unwrap()()? {
                 let input_buffer = unsafe {
-                    MFCreateDXGISurfaceBuffer(&ID3D11Texture2D::IID, sample.texture, 0, false)?
+                    MFCreateDXGISurfaceBuffer(&ID3D11Texture2D::IID, &sample.texture, 0, false)?
                 };
                 let mf_sample = unsafe { MFCreateSample()? };
                 unsafe {
-                    mf_sample.AddBuffer(input_buffer)?;
+                    mf_sample.AddBuffer(&input_buffer)?;
                     mf_sample.SetSampleTime(sample.timestamp.Duration)?;
                     self.transform
-                        .ProcessInput(self.input_stream_id, mf_sample, 0)?;
+                        .ProcessInput(self.input_stream_id, &mf_sample, 0)?;
                 };
                 should_exit = false;
             }
