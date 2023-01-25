@@ -44,11 +44,7 @@ impl VideoProcessor {
         output_format: DXGI_FORMAT,
         output_size: SizeInt32,
     ) -> Result<Self> {
-        let d3d_context = {
-            let mut d3d_context = None;
-            unsafe { d3d_device.GetImmediateContext(&mut d3d_context) };
-            d3d_context.unwrap()
-        };
+        let d3d_context = unsafe { d3d_device.GetImmediateContext()? };
 
         // Setup video conversion
         let video_device: ID3D11VideoDevice = d3d_device.cast()?;
@@ -95,7 +91,12 @@ impl VideoProcessor {
                 bottom: dest_rect.Y + dest_rect.Height,
             };
             unsafe {
-                video_context.VideoProcessorSetStreamDestRect(&video_processor, 0, true, &rect)
+                video_context.VideoProcessorSetStreamDestRect(
+                    &video_processor,
+                    0,
+                    true,
+                    Some(&rect),
+                )
             };
         }
 
@@ -113,8 +114,11 @@ impl VideoProcessor {
             BindFlags: D3D11_BIND_RENDER_TARGET | D3D11_BIND_VIDEO_ENCODER,
             ..Default::default()
         };
-        let video_output_texture =
-            unsafe { d3d_device.CreateTexture2D(&texture_desc, std::ptr::null())? };
+        let video_output_texture = unsafe {
+            let mut texture = None;
+            d3d_device.CreateTexture2D(&texture_desc, None, Some(&mut texture))?;
+            texture.unwrap()
+        };
 
         let output_view_desc = D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC {
             ViewDimension: D3D11_VPOV_DIMENSION_TEXTURE2D,
@@ -126,19 +130,25 @@ impl VideoProcessor {
             },
         };
         let video_output = unsafe {
+            let mut output = None;
             video_device.CreateVideoProcessorOutputView(
                 &video_output_texture,
                 &video_enum,
                 &output_view_desc,
-            )?
+                Some(&mut output),
+            )?;
+            output.unwrap()
         };
 
         texture_desc.Width = input_size.Width as u32;
         texture_desc.Height = input_size.Height as u32;
         texture_desc.Format = input_format;
         texture_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-        let video_input_texture =
-            unsafe { d3d_device.CreateTexture2D(&texture_desc, std::ptr::null())? };
+        let video_input_texture = unsafe {
+            let mut texture = None;
+            d3d_device.CreateTexture2D(&texture_desc, None, Some(&mut texture))?;
+            texture.unwrap()
+        };
 
         let input_view_desc = D3D11_VIDEO_PROCESSOR_INPUT_VIEW_DESC {
             ViewDimension: D3D11_VPIV_DIMENSION_TEXTURE2D,
@@ -151,11 +161,14 @@ impl VideoProcessor {
             ..Default::default()
         };
         let video_input = unsafe {
+            let mut input = None;
             video_device.CreateVideoProcessorInputView(
                 &video_input_texture,
                 &video_enum,
                 &input_view_desc,
-            )?
+                Some(&mut input),
+            )?;
+            input.unwrap()
         };
 
         Ok(Self {
@@ -186,12 +199,11 @@ impl VideoProcessor {
                 .CopyResource(&self.video_input_texture, input_texture);
 
             // Convert to NV12
-            let video_input = self.video_input.clone(); // TODO: Avoid AddRef
             let video_stream = D3D11_VIDEO_PROCESSOR_STREAM {
                 Enable: true.into(),
                 OutputIndex: 0,
                 InputFrameOrField: 0,
-                pInputSurface: Some(video_input),
+                pInputSurface: windows::core::ManuallyDrop::new(&self.video_input),
                 ..Default::default()
             };
             self.video_context.VideoProcessorBlt(

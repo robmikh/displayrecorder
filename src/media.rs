@@ -30,8 +30,8 @@ pub fn enumerate_mfts(
         MFTEnumEx(
             *category,
             MFT_ENUM_FLAG(flags),
-            type_info_to_ptr(input_type),
-            type_info_to_ptr(output_type),
+            Some(type_info_to_ptr(input_type)),
+            Some(type_info_to_ptr(output_type)),
             &mut mfactivate_list,
             &mut num_mfactivate,
         )?;
@@ -54,7 +54,7 @@ pub fn enumerate_mfts(
                 std::mem::drop(temp)
             }
             // Free the memory that was allocated for the list
-            CoTaskMemFree(mfactivate_list as *const _);
+            CoTaskMemFree(Some(mfactivate_list as *const _));
         }
     }
     Ok(transform_sources)
@@ -68,7 +68,7 @@ pub fn get_string_attribute(
         match attributes.GetStringLength(attribute_guid) {
             Ok(mut length) => {
                 let mut result = vec![0u16; (length + 1) as usize];
-                attributes.GetString(attribute_guid, &mut result, &mut length)?;
+                attributes.GetString(attribute_guid, &mut result, Some(&mut length))?;
                 result.resize(length as usize, 0);
                 Ok(Some(String::from_utf16(&result).unwrap()))
             }

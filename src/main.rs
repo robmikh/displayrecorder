@@ -124,11 +124,7 @@ fn run(
     // Create our file
     let path = unsafe {
         let mut new_path = vec![0u16; MAX_PATH as usize];
-        let length = GetFullPathNameW(
-            &HSTRING::from(output_path),
-            &mut new_path,
-            std::ptr::null_mut(),
-        );
+        let length = GetFullPathNameW(&HSTRING::from(output_path), Some(&mut new_path), None);
         new_path.resize(length as usize, 0);
         String::from_utf16(&new_path).unwrap()
     };

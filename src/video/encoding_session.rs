@@ -123,11 +123,7 @@ impl SampleGenerator {
         input_size: SizeInt32,
         output_size: SizeInt32,
     ) -> Result<Self> {
-        let d3d_context = {
-            let mut d3d_context = None;
-            unsafe { d3d_device.GetImmediateContext(&mut d3d_context) };
-            d3d_context.unwrap()
-        };
+        let d3d_context = unsafe { d3d_device.GetImmediateContext()? };
 
         let video_processor = VideoProcessor::new(
             d3d_device.clone(),
@@ -151,10 +147,16 @@ impl SampleGenerator {
             BindFlags: D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
             ..Default::default()
         };
-        let compose_texture =
-            unsafe { d3d_device.CreateTexture2D(&texture_desc, std::ptr::null())? };
-        let render_target_view =
-            unsafe { d3d_device.CreateRenderTargetView(&compose_texture, std::ptr::null())? };
+        let compose_texture = unsafe {
+            let mut texture = None;
+            d3d_device.CreateTexture2D(&texture_desc, None, Some(&mut texture))?;
+            texture.unwrap()
+        };
+        let render_target_view = unsafe {
+            let mut rtv = None;
+            d3d_device.CreateRenderTargetView(&compose_texture, None, Some(&mut rtv))?;
+            rtv.unwrap()
+        };
 
         let frame_generator = CaptureFrameGenerator::new(d3d_device.clone(), item, input_size)?;
 
@@ -251,7 +253,7 @@ impl SampleGenerator {
                 0,
                 &frame_texture,
                 0,
-                &region,
+                Some(&region),
             );
 
             // Process our back buffer
@@ -267,7 +269,12 @@ impl SampleGenerator {
                 video_output_texture.GetDesc(&mut desc);
                 desc
             };
-            let sample_texture = self.d3d_device.CreateTexture2D(&desc, std::ptr::null())?;
+            let sample_texture = {
+                let mut texture = None;
+                self.d3d_device
+                    .CreateTexture2D(&desc, None, Some(&mut texture))?;
+                texture.unwrap()
+            };
             self.d3d_context
                 .CopyResource(&sample_texture, video_output_texture);
 

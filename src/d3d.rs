@@ -24,11 +24,11 @@ fn create_d3d_device_with_type(
             driver_type,
             None,
             flags,
-            &[],
+            None,
             D3D11_SDK_VERSION as u32,
-            device,
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
+            Some(device),
+            None,
+            None,
         )
     }
 }
