@@ -1,10 +1,8 @@
 use windows::{
     core::{Array, Result, GUID},
-    Win32::{
-        Media::MediaFoundation::{
-            IMFActivate, IMFAttributes, MFTEnumEx, MFT_ENUM_FLAG, MFT_REGISTER_TYPE_INFO,
-            MF_E_ATTRIBUTENOTFOUND,
-        },
+    Win32::Media::MediaFoundation::{
+        IMFActivate, IMFAttributes, MFTEnumEx, MFT_ENUM_FLAG, MFT_REGISTER_TYPE_INFO,
+        MF_E_ATTRIBUTENOTFOUND,
     },
 };
 
