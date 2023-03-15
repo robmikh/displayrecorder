@@ -33,7 +33,7 @@ pub struct VideoProcessor {
     video_output_texture: ID3D11Texture2D,
     video_output: ID3D11VideoProcessorOutputView,
     video_input_texture: ID3D11Texture2D,
-    video_input: Option<ID3D11VideoProcessorInputView>,
+    video_input: ID3D11VideoProcessorInputView,
 }
 
 impl VideoProcessor {
@@ -181,7 +181,7 @@ impl VideoProcessor {
             video_output_texture,
             video_output,
             video_input_texture,
-            video_input: Some(video_input),
+            video_input,
         })
     }
 
@@ -203,19 +203,15 @@ impl VideoProcessor {
                 Enable: true.into(),
                 OutputIndex: 0,
                 InputFrameOrField: 0,
-                // The typing of pInputSurface is really unfortunate...
-                pInputSurface: std::mem::ManuallyDrop::new(self.video_input.take()),
+                pInputSurface: std::mem::transmute_copy(&self.video_input),
                 ..Default::default()
             };
-            let mut streams = vec![video_stream];
-            let result = self.video_context.VideoProcessorBlt(
+            self.video_context.VideoProcessorBlt(
                 &self.video_processor,
                 &self.video_output,
                 0,
-                &streams,
-            );
-            self.video_input = std::mem::ManuallyDrop::into_inner(streams.remove(0).pInputSurface);
-            result
+                &[video_stream],
+            )
         }
     }
 }
