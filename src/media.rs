@@ -19,7 +19,7 @@ fn type_info_to_ptr(type_info: Option<&MFT_REGISTER_TYPE_INFO>) -> *const MFT_RE
 
 pub fn enumerate_mfts(
     category: &GUID,
-    flags: u32,
+    flags: MFT_ENUM_FLAG,
     input_type: Option<&MFT_REGISTER_TYPE_INFO>,
     output_type: Option<&MFT_REGISTER_TYPE_INFO>,
 ) -> Result<Vec<IMFActivate>> {
@@ -29,7 +29,7 @@ pub fn enumerate_mfts(
     unsafe {
         MFTEnumEx(
             *category,
-            MFT_ENUM_FLAG(flags),
+            flags,
             Some(type_info_to_ptr(input_type)),
             Some(type_info_to_ptr(output_type)),
             &mut mfactivate_list,

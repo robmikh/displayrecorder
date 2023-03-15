@@ -1,5 +1,5 @@
 use windows::{
-    core::{Interface, Result},
+    core::{ComInterface, Result},
     Foundation::Numerics::Vector2,
     Graphics::{RectInt32, SizeInt32},
     Win32::{
@@ -203,7 +203,7 @@ impl VideoProcessor {
                 Enable: true.into(),
                 OutputIndex: 0,
                 InputFrameOrField: 0,
-                pInputSurface: windows::core::ManuallyDrop::new(&self.video_input),
+                pInputSurface: std::mem::transmute_copy(&self.video_input),
                 ..Default::default()
             };
             self.video_context.VideoProcessorBlt(
