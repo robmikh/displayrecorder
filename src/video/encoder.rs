@@ -7,7 +7,7 @@ use std::{
 };
 
 use windows::{
-    core::{Error, Interface, Result},
+    core::{ComInterface, Error, Result},
     Foundation::TimeSpan,
     Graphics::SizeInt32,
     Win32::{

@@ -1,4 +1,4 @@
-use windows::core::{Abi, Interface, Result};
+use windows::core::{ComInterface, Interface, Result};
 use windows::Graphics::DirectX::Direct3D11::IDirect3DDevice;
 use windows::Win32::Graphics::Direct3D11::D3D11_CREATE_DEVICE_DEBUG;
 use windows::Win32::Graphics::{
@@ -58,7 +58,9 @@ pub fn create_direct3d_device(d3d_device: &ID3D11Device) -> Result<IDirect3DDevi
     inspectable.cast()
 }
 
-pub fn get_d3d_interface_from_object<S: Interface, R: Interface + Abi>(object: &S) -> Result<R> {
+pub fn get_d3d_interface_from_object<S: Interface + ComInterface, R: Interface + ComInterface>(
+    object: &S,
+) -> Result<R> {
     let access: IDirect3DDxgiInterfaceAccess = object.cast()?;
     let object = unsafe { access.GetInterface::<R>()? };
     Ok(object)

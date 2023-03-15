@@ -1,5 +1,5 @@
 use windows::{
-    core::{Interface, Result},
+    core::{ComInterface, Result},
     Foundation::Numerics::Vector2,
     Graphics::{RectInt32, SizeInt32},
     Win32::{
@@ -33,7 +33,7 @@ pub struct VideoProcessor {
     video_output_texture: ID3D11Texture2D,
     video_output: ID3D11VideoProcessorOutputView,
     video_input_texture: ID3D11Texture2D,
-    video_input: ID3D11VideoProcessorInputView,
+    video_input: Option<ID3D11VideoProcessorInputView>,
 }
 
 impl VideoProcessor {
@@ -181,7 +181,7 @@ impl VideoProcessor {
             video_output_texture,
             video_output,
             video_input_texture,
-            video_input,
+            video_input: Some(video_input),
         })
     }
 
@@ -203,15 +203,19 @@ impl VideoProcessor {
                 Enable: true.into(),
                 OutputIndex: 0,
                 InputFrameOrField: 0,
-                pInputSurface: windows::core::ManuallyDrop::new(&self.video_input),
+                // The typing of pInputSurface is really unfortunate...
+                pInputSurface: std::mem::ManuallyDrop::new(self.video_input.take()),
                 ..Default::default()
             };
-            self.video_context.VideoProcessorBlt(
+            let mut streams = vec![video_stream];
+            let result = self.video_context.VideoProcessorBlt(
                 &self.video_processor,
                 &self.video_output,
                 0,
-                &[video_stream],
-            )
+                &streams,
+            );
+            self.video_input = std::mem::ManuallyDrop::into_inner(streams.remove(0).pInputSurface);
+            result
         }
     }
 }

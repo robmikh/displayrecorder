@@ -1,5 +1,5 @@
 use windows::{
-    core::{Interface, Result},
+    core::{ComInterface, Result},
     Win32::Media::MediaFoundation::{
         IMFActivate, IMFTransform, MFMediaType_Video, MFT_FRIENDLY_NAME_Attribute,
         MFVideoFormat_H264, MFT_CATEGORY_VIDEO_ENCODER, MFT_ENUM_FLAG_HARDWARE,
@@ -22,9 +22,7 @@ impl VideoEncoderDevice {
         };
         let encoders = enumerate_mfts(
             &MFT_CATEGORY_VIDEO_ENCODER,
-            (MFT_ENUM_FLAG_HARDWARE.0
-                | MFT_ENUM_FLAG_TRANSCODE_ONLY.0
-                | MFT_ENUM_FLAG_SORTANDFILTER.0) as u32,
+            MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_TRANSCODE_ONLY | MFT_ENUM_FLAG_SORTANDFILTER,
             None,
             Some(&output_info),
         )?;
