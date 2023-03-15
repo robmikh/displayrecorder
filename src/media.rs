@@ -1,11 +1,10 @@
 use windows::{
-    core::{Result, GUID},
+    core::{Array, Result, GUID},
     Win32::{
         Media::MediaFoundation::{
             IMFActivate, IMFAttributes, MFTEnumEx, MFT_ENUM_FLAG, MFT_REGISTER_TYPE_INFO,
             MF_E_ATTRIBUTENOTFOUND,
         },
-        System::Com::CoTaskMemFree,
     },
 };
 
@@ -24,37 +23,23 @@ pub fn enumerate_mfts(
     output_type: Option<&MFT_REGISTER_TYPE_INFO>,
 ) -> Result<Vec<IMFActivate>> {
     let mut transform_sources = Vec::new();
-    let mut mfactivate_list = std::ptr::null_mut();
-    let mut num_mfactivate = 0;
-    unsafe {
+    let mfactivate_list = unsafe {
+        let mut data = std::ptr::null_mut();
+        let mut len = 0;
         MFTEnumEx(
             *category,
             flags,
             Some(type_info_to_ptr(input_type)),
             Some(type_info_to_ptr(output_type)),
-            &mut mfactivate_list,
-            &mut num_mfactivate,
+            &mut data,
+            &mut len,
         )?;
-    }
-    if num_mfactivate > 0 {
-        unsafe {
-            // If we have more than one IMFActivate in the list,
-            // we can transmute it out of the Option<_>
-            let mfactivate_list: *mut IMFActivate = std::mem::transmute(mfactivate_list);
-            let mfactivate_slice =
-                std::slice::from_raw_parts(mfactivate_list, num_mfactivate as usize);
-            for mfactivate in mfactivate_slice {
-                let transform_source = mfactivate.clone();
-                // This is a dirty trick we play so that we can
-                // release the underlying IMFActivate despite having
-                // a shared reference.
-                let temp: windows::core::IUnknown = std::mem::transmute_copy(&transform_source);
-                transform_sources.push(transform_source);
-                // We need to release each item
-                std::mem::drop(temp)
-            }
-            // Free the memory that was allocated for the list
-            CoTaskMemFree(Some(mfactivate_list as *const _));
+        Array::<IMFActivate>::from_raw_parts(data as _, len)
+    };
+    if !mfactivate_list.is_empty() {
+        for mfactivate in mfactivate_list.as_slice() {
+            let transform_source = mfactivate.clone().unwrap();
+            transform_sources.push(transform_source);
         }
     }
     Ok(transform_sources)
