@@ -5,18 +5,14 @@ use windows::Win32::{
 
 pub fn get_display_handle_from_index(index: usize) -> Option<HMONITOR> {
     let displays = enumerate_displays();
-    if let Some(handle) = displays.get(index) {
-        Some(*handle)
-    } else {
-        None
-    }
+    displays.get(index).copied()
 }
 
-fn enumerate_displays() -> Box<Vec<HMONITOR>> {
+fn enumerate_displays() -> Vec<HMONITOR> {
     unsafe {
-        let displays = Box::into_raw(Box::new(Vec::<HMONITOR>::new()));
+        let displays = Box::into_raw(Box::default());
         EnumDisplayMonitors(HDC(0), None, Some(enum_monitor), LPARAM(displays as isize));
-        Box::from_raw(displays)
+        *Box::from_raw(displays)
     }
 }
 

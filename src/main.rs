@@ -182,7 +182,7 @@ fn main() {
     // Handle /?
     let args: Vec<_> = std::env::args().collect();
     if args.contains(&"/?".to_owned()) || args.contains(&"-?".to_owned()) {
-        Args::parse_from(&["displayrecorder.exe", "--help"]);
+        Args::parse_from(["displayrecorder.exe", "--help"]);
         std::process::exit(0);
     }
 
@@ -212,7 +212,7 @@ fn main() {
 
     let result = run(
         monitor_index,
-        &output_path,
+        output_path,
         bit_rate,
         frame_rate,
         resolution,
@@ -307,12 +307,10 @@ fn pump_messages<F: FnMut() -> Result<bool>>(mut hot_key_callback: F) -> Result<
     unsafe {
         let mut message = MSG::default();
         while GetMessageW(&mut message, HWND(0), 0, 0).into() {
-            if message.message == WM_HOTKEY {
-                if hot_key_callback()? {
-                    break;
-                }
+            if message.message == WM_HOTKEY && hot_key_callback()? {
+                break;
             }
-            DispatchMessageW(&mut message);
+            DispatchMessageW(&message);
         }
     }
     Ok(())

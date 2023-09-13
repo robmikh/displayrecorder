@@ -65,7 +65,6 @@ impl VideoProcessor {
             OutputWidth: input_size.Width as u32,
             OutputHeight: input_size.Height as u32,
             Usage: D3D11_VIDEO_USAGE_OPTIMAL_QUALITY,
-            ..Default::default()
         };
         let video_enum = unsafe { video_device.CreateVideoProcessorEnumerator(&video_desc)? };
 
@@ -111,7 +110,7 @@ impl VideoProcessor {
                 ..Default::default()
             },
             Usage: D3D11_USAGE_DEFAULT,
-            BindFlags: D3D11_BIND_RENDER_TARGET | D3D11_BIND_VIDEO_ENCODER,
+            BindFlags: (D3D11_BIND_RENDER_TARGET.0 | D3D11_BIND_VIDEO_ENCODER.0) as u32,
             ..Default::default()
         };
         let video_output_texture = unsafe {
@@ -123,10 +122,7 @@ impl VideoProcessor {
         let output_view_desc = D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC {
             ViewDimension: D3D11_VPOV_DIMENSION_TEXTURE2D,
             Anonymous: D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC_0 {
-                Texture2D: D3D11_TEX2D_VPOV {
-                    MipSlice: 0,
-                    ..Default::default()
-                },
+                Texture2D: D3D11_TEX2D_VPOV { MipSlice: 0 },
             },
         };
         let video_output = unsafe {
@@ -143,7 +139,7 @@ impl VideoProcessor {
         texture_desc.Width = input_size.Width as u32;
         texture_desc.Height = input_size.Height as u32;
         texture_desc.Format = input_format;
-        texture_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+        texture_desc.BindFlags = (D3D11_BIND_RENDER_TARGET.0 | D3D11_BIND_SHADER_RESOURCE.0) as u32;
         let video_input_texture = unsafe {
             let mut texture = None;
             d3d_device.CreateTexture2D(&texture_desc, None, Some(&mut texture))?;

@@ -17,7 +17,7 @@ impl HotKey {
     pub fn new(modifiers: HOT_KEY_MODIFIERS, key: u32) -> Result<Self> {
         let id = unsafe { HOT_KEY_ID.fetch_add(1, Ordering::SeqCst) + 1 };
         unsafe {
-            RegisterHotKey(HWND(0), id, modifiers, key).ok()?;
+            RegisterHotKey(HWND(0), id, modifiers, key)?;
         }
         Ok(Self { id })
     }
