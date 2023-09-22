@@ -144,7 +144,7 @@ impl SampleGenerator {
                 ..Default::default()
             },
             Usage: D3D11_USAGE_DEFAULT,
-            BindFlags: D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+            BindFlags: (D3D11_BIND_RENDER_TARGET.0 | D3D11_BIND_SHADER_RESOURCE.0) as u32,
             ..Default::default()
         };
         let compose_texture = unsafe {
@@ -244,7 +244,7 @@ impl SampleGenerator {
 
         unsafe {
             self.d3d_context
-                .ClearRenderTargetView(&self.render_target_view, CLEAR_COLOR.as_ptr());
+                .ClearRenderTargetView(&self.render_target_view, &CLEAR_COLOR);
             self.d3d_context.CopySubresourceRegion(
                 &self.compose_texture,
                 0,
