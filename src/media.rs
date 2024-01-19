@@ -6,14 +6,6 @@ use windows::{
     },
 };
 
-fn type_info_to_ptr(type_info: Option<&MFT_REGISTER_TYPE_INFO>) -> *const MFT_REGISTER_TYPE_INFO {
-    if let Some(type_info) = type_info {
-        type_info as *const _
-    } else {
-        std::ptr::null()
-    }
-}
-
 pub fn enumerate_mfts(
     category: &GUID,
     flags: MFT_ENUM_FLAG,
@@ -27,8 +19,8 @@ pub fn enumerate_mfts(
         MFTEnumEx(
             *category,
             flags,
-            Some(type_info_to_ptr(input_type)),
-            Some(type_info_to_ptr(output_type)),
+            input_type.map(|info| info as *const _),
+            output_type.map(|info| info as *const _),
             &mut data,
             &mut len,
         )?;

@@ -48,6 +48,7 @@ use crate::{
     video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
 };
 
+#[allow(clippy::too_many_arguments)]
 fn run(
     display_index: usize,
     output_path: &str,
