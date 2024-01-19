@@ -19,8 +19,8 @@ pub fn enumerate_mfts(
         MFTEnumEx(
             *category,
             flags,
-            input_type.and_then(|info|Some(info as *const _)),
-            output_type.and_then(|info|Some(info as *const _)),
+            input_type.map(|info| info as *const _),
+            output_type.map(|info| info as *const _),
             &mut data,
             &mut len,
         )?;
