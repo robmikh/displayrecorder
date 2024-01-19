@@ -9,8 +9,8 @@ use windows::{
 pub fn enumerate_mfts(
     category: &GUID,
     flags: MFT_ENUM_FLAG,
-    input_type: Option<*const MFT_REGISTER_TYPE_INFO>,
-    output_type: Option<*const MFT_REGISTER_TYPE_INFO>,
+    input_type: Option<&MFT_REGISTER_TYPE_INFO>,
+    output_type: Option<&MFT_REGISTER_TYPE_INFO>,
 ) -> Result<Vec<IMFActivate>> {
     let mut transform_sources = Vec::new();
     let mfactivate_list = unsafe {
@@ -19,8 +19,8 @@ pub fn enumerate_mfts(
         MFTEnumEx(
             *category,
             flags,
-            input_type,
-            output_type,
+            input_type.and_then(|info|Some(info as *const _)),
+            output_type.and_then(|info|Some(info as *const _)),
             &mut data,
             &mut len,
         )?;
