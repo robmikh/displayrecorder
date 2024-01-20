@@ -9,6 +9,7 @@ use windows::{
 
 use crate::media::{enumerate_mfts, get_string_attribute};
 
+#[derive(Clone)]
 pub struct VideoEncoderDevice {
     source: IMFActivate,
     display_name: String,

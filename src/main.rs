@@ -12,6 +12,12 @@ use std::{path::Path, time::Duration};
 use args::Args;
 use clap::Parser;
 use hotkey::HotKey;
+use video::{
+    backend::EncoderBackend,
+    encoding_session::{VideoEncoderSessionFactory, VideoEncodingSession},
+    mf::encoding_session::MFVideoEncodingSessionFactory,
+    wmt::encoding_session::WMTVideoEncodingSessionFactory,
+};
 use windows::{
     core::{Result, RuntimeName, HSTRING},
     Foundation::Metadata::ApiInformation,
@@ -40,12 +46,9 @@ use windows::{
 };
 
 use crate::{
-    capture::create_capture_item_for_monitor,
-    d3d::create_d3d_device,
-    displays::get_display_handle_from_index,
-    media::MF_VERSION,
-    resolution::Resolution,
-    video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
+    capture::create_capture_item_for_monitor, d3d::create_d3d_device,
+    displays::get_display_handle_from_index, media::MF_VERSION, resolution::Resolution,
+    video::mf::encoder_device::VideoEncoderDevice,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -59,6 +62,7 @@ fn run(
     verbose: bool,
     wait_for_debugger: bool,
     console_mode: bool,
+    backend: EncoderBackend,
 ) -> Result<()> {
     unsafe {
         RoInitialize(RO_INIT_MULTITHREADED)?;
@@ -103,24 +107,7 @@ fn run(
         item.Size()?
     };
     let bit_rate = bit_rate * 1000000;
-    let encoder_devices = VideoEncoderDevice::enumerate()?;
-    if encoder_devices.is_empty() {
-        exit_with_error("No hardware H264 encoders found!");
-    }
-    if verbose {
-        println!("Encoders ({}):", encoder_devices.len());
-        for encoder_device in &encoder_devices {
-            println!("  {}", encoder_device.display_name());
-        }
-    }
-    let encoder_device = if let Some(encoder_device) = encoder_devices.get(encoder_index) {
-        encoder_device
-    } else {
-        exit_with_error("Encoder index is out of bounds!");
-    };
-    if verbose {
-        println!("Using: {}", encoder_device.display_name());
-    }
+    let session_factory = create_encoding_session_factory(backend, encoder_index, verbose)?;
 
     // Create our file
     let path = unsafe {
@@ -150,7 +137,7 @@ fn run(
         let mut session = create_encoding_session(
             d3d_device,
             item,
-            encoder_device,
+            &session_factory,
             resolution,
             bit_rate,
             frame_rate,
@@ -205,6 +192,7 @@ fn main() {
     let frame_rate: u32 = args.frame_rate;
     let resolution: Resolution = args.resolution;
     let encoder_index: usize = args.encoder;
+    let backend: EncoderBackend = args.backend;
 
     // Validate some of the params
     if !validate_path(output_path) {
@@ -221,6 +209,7 @@ fn main() {
         verbose | wait_for_debugger,
         wait_for_debugger,
         console_mode,
+        backend,
     );
 
     // We do this for nicer HRESULT printing when errors occur.
@@ -246,24 +235,47 @@ fn enum_encoders() -> Result<()> {
     Ok(())
 }
 
+fn create_encoding_session_factory(
+    backend: EncoderBackend,
+    encoder_index: usize,
+    verbose: bool,
+) -> Result<Box<dyn VideoEncoderSessionFactory>> {
+    Ok(match backend {
+        EncoderBackend::MediaFoundation => {
+            let encoder_devices = VideoEncoderDevice::enumerate()?;
+            if encoder_devices.is_empty() {
+                exit_with_error("No hardware H264 encoders found!");
+            }
+            if verbose {
+                println!("Encoders ({}):", encoder_devices.len());
+                for encoder_device in &encoder_devices {
+                    println!("  {}", encoder_device.display_name());
+                }
+            }
+            let encoder_device = if let Some(encoder_device) = encoder_devices.get(encoder_index) {
+                encoder_device
+            } else {
+                exit_with_error("Encoder index is out of bounds!");
+            };
+            if verbose {
+                println!("Using: {}", encoder_device.display_name());
+            }
+            Box::new(MFVideoEncodingSessionFactory::new(encoder_device.clone()))
+        }
+        EncoderBackend::WindowsMediaTranscoding => Box::new(WMTVideoEncodingSessionFactory::new()),
+    })
+}
+
 fn create_encoding_session(
     d3d_device: ID3D11Device,
     item: GraphicsCaptureItem,
-    encoder_device: &VideoEncoderDevice,
+    factory: &Box<dyn VideoEncoderSessionFactory>,
     resolution: SizeInt32,
     bit_rate: u32,
     frame_rate: u32,
     stream: IRandomAccessStream,
-) -> Result<VideoEncodingSession> {
-    let result = VideoEncodingSession::new(
-        d3d_device,
-        item,
-        encoder_device,
-        resolution,
-        bit_rate,
-        frame_rate,
-        stream,
-    );
+) -> Result<Box<dyn VideoEncodingSession>> {
+    let result = factory.create_session(d3d_device, item, resolution, bit_rate, frame_rate, stream);
     if result.is_err() {
         println!("Error during encoder setup, try another set of encoding settings.");
     }

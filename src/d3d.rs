@@ -1,6 +1,7 @@
 use windows::core::{ComInterface, Interface, Result};
-use windows::Graphics::DirectX::Direct3D11::IDirect3DDevice;
-use windows::Win32::Graphics::Direct3D11::D3D11_CREATE_DEVICE_DEBUG;
+use windows::Graphics::DirectX::Direct3D11::{IDirect3DDevice, IDirect3DSurface};
+use windows::Win32::Graphics::Direct3D11::{ID3D11Texture2D, D3D11_CREATE_DEVICE_DEBUG};
+use windows::Win32::Graphics::Dxgi::IDXGISurface;
 use windows::Win32::Graphics::{
     Direct3D::{D3D_DRIVER_TYPE, D3D_DRIVER_TYPE_HARDWARE, D3D_DRIVER_TYPE_WARP},
     Direct3D11::{
@@ -10,7 +11,8 @@ use windows::Win32::Graphics::{
     Dxgi::{IDXGIDevice, DXGI_ERROR_UNSUPPORTED},
 };
 use windows::Win32::System::WinRT::Direct3D11::{
-    CreateDirect3D11DeviceFromDXGIDevice, IDirect3DDxgiInterfaceAccess,
+    CreateDirect3D11DeviceFromDXGIDevice, CreateDirect3D11SurfaceFromDXGISurface,
+    IDirect3DDxgiInterfaceAccess,
 };
 
 fn create_d3d_device_with_type(
@@ -55,6 +57,12 @@ pub fn create_d3d_device() -> Result<ID3D11Device> {
 pub fn create_direct3d_device(d3d_device: &ID3D11Device) -> Result<IDirect3DDevice> {
     let dxgi_device: IDXGIDevice = d3d_device.cast()?;
     let inspectable = unsafe { CreateDirect3D11DeviceFromDXGIDevice(Some(&dxgi_device))? };
+    inspectable.cast()
+}
+
+pub fn create_direct3d_surface(d3d_texture: &ID3D11Texture2D) -> Result<IDirect3DSurface> {
+    let dxgi_surface: IDXGISurface = d3d_texture.cast()?;
+    let inspectable = unsafe { CreateDirect3D11SurfaceFromDXGISurface(Some(&dxgi_surface))? };
     inspectable.cast()
 }
 
