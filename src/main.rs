@@ -45,7 +45,7 @@ use crate::{
     displays::get_display_handle_from_index,
     media::MF_VERSION,
     resolution::Resolution,
-    video::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
+    video::mf::{encoder_device::VideoEncoderDevice, encoding_session::VideoEncodingSession},
 };
 
 #[allow(clippy::too_many_arguments)]
