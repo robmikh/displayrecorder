@@ -24,6 +24,7 @@ use windows::{
 };
 
 use crate::{
+    capture::CaptureFrameGeneratorStopSignal,
     d3d::create_direct3d_surface,
     video::{
         encoding_session::{VideoEncoderSessionFactory, VideoEncodingSession},
@@ -65,6 +66,7 @@ struct WMTVideoEncodingSession {
 
     capture_session: GraphicsCaptureSession,
     encoder_thread: Option<JoinHandle<Result<()>>>,
+    stop_signal: CaptureFrameGeneratorStopSignal,
 }
 
 impl WMTVideoEncodingSession {
@@ -106,6 +108,7 @@ impl WMTVideoEncodingSession {
         let video_descriptor = VideoStreamDescriptor::Create(&properties)?;
 
         let mut sample_generator = SampleGenerator::new(d3d_device, item, input_size, output_size)?;
+        let stop_signal = sample_generator.stop_signal();
         let mut first_timestamp: Option<TimeSpan> = None;
         let capture_session = sample_generator.capture_session().clone();
 
@@ -166,6 +169,7 @@ impl WMTVideoEncodingSession {
 
             capture_session,
             encoder_thread: None,
+            stop_signal,
         })
     }
 }
@@ -216,10 +220,23 @@ impl VideoEncodingSession for WMTVideoEncodingSession {
             let transcoder = self.transcoder.clone();
             let session = TranscoderSession::new(profile, stream, stream_source, transcoder);
             self.capture_session.StartCapture()?;
-            self.encoder_thread = Some(std::thread::spawn(move || -> Result<()> {
-                session.start()?;
-                Ok(())
-            }));
+            self.encoder_thread = Some({
+                let result = std::thread::Builder::new()
+                    .name("Encoder Thread".to_owned())
+                    .spawn(move || -> Result<()> {
+                        session.start()?;
+                        Ok(())
+                    });
+                match result {
+                    Ok(handle) => handle,
+                    Err(_) => {
+                        return Err(windows::core::Error::new(
+                            E_UNEXPECTED,
+                            HSTRING::from("Unable to create the encoder thread!"),
+                        ));
+                    }
+                }
+            });
         }
         Ok(())
     }
@@ -227,6 +244,7 @@ impl VideoEncodingSession for WMTVideoEncodingSession {
     fn stop(&mut self) -> Result<()> {
         if let Some(encoder_thread) = self.encoder_thread.take() {
             self.capture_session.Close()?;
+            self.stop_signal.signal();
             match encoder_thread.join() {
                 Ok(result) => result,
                 Err(_) => Err(windows::core::Error::new(

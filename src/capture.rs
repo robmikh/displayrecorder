@@ -91,11 +91,29 @@ impl CaptureFrameGenerator {
         self.sender.send(None).unwrap();
         Ok(())
     }
+
+    pub fn stop_signal(&self) -> CaptureFrameGeneratorStopSignal {
+        CaptureFrameGeneratorStopSignal::new(self.sender.clone())
+    }
 }
 
 impl Drop for CaptureFrameGenerator {
     fn drop(&mut self) {
         self.session.Close().unwrap();
         self.frame_pool.Close().unwrap();
+    }
+}
+
+pub struct CaptureFrameGeneratorStopSignal {
+    sender: Sender<Option<Direct3D11CaptureFrame>>,
+}
+
+impl CaptureFrameGeneratorStopSignal {
+    fn new(sender: Sender<Option<Direct3D11CaptureFrame>>) -> Self {
+        Self { sender }
+    }
+
+    pub fn signal(&self) {
+        let _ = self.sender.send(None);
     }
 }

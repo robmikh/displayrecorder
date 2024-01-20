@@ -16,7 +16,9 @@ use windows::{
 };
 
 use crate::{
-    capture::CaptureFrameGenerator, d3d::get_d3d_interface_from_object, video::CLEAR_COLOR,
+    capture::{CaptureFrameGenerator, CaptureFrameGeneratorStopSignal},
+    d3d::get_d3d_interface_from_object,
+    video::CLEAR_COLOR,
 };
 
 use super::encoding_session::VideoEncoderInputSample;
@@ -108,6 +110,10 @@ impl SampleGenerator {
             self.stop_capture()?;
             Ok(None)
         }
+    }
+
+    pub fn stop_signal(&self) -> CaptureFrameGeneratorStopSignal {
+        self.frame_generator.stop_signal()
     }
 
     fn stop_capture(&mut self) -> Result<()> {
