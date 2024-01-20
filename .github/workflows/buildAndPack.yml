@@ -7,8 +7,9 @@ on:
     tags:
       - 'v*'
 
+# Remove flags here that are present in config.toml once rust-lang/cargo#12875 is in
 env:
-  RUSTFLAGS: -Dwarnings
+  RUSTFLAGS: -Dwarnings -C target-feature=+crt-static
 
 jobs:
   pack:
@@ -26,7 +27,7 @@ jobs:
         components: rustfmt
     
     - name: build
-      run: cargo build --release --target ${{ matrix.target }} --config .cargo\config.toml
+      run: cargo build --release --target ${{ matrix.target }}
 
     - name: fmt
       run: cargo fmt --all -- --check
