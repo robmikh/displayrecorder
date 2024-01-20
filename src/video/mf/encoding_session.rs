@@ -27,7 +27,11 @@ use windows::{
 use crate::{
     capture::CaptureFrameGenerator,
     d3d::get_d3d_interface_from_object,
-    video::encoding_session::{VideoEncoderSessionFactory, VideoEncodingSession},
+    video::{
+        encoding_session::{VideoEncoderSessionFactory, VideoEncodingSession},
+        util::ensure_even_size,
+        CLEAR_COLOR,
+    },
 };
 
 use super::{
@@ -367,22 +371,5 @@ impl SampleWriter {
             self.sink_writer
                 .WriteSample(self.sink_writer_stream_index, sample)
         }
-    }
-}
-
-const CLEAR_COLOR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-
-fn ensure_even(value: i32) -> i32 {
-    if value % 2 == 0 {
-        value
-    } else {
-        value + 1
-    }
-}
-
-fn ensure_even_size(size: SizeInt32) -> SizeInt32 {
-    SizeInt32 {
-        Width: ensure_even(size.Width),
-        Height: ensure_even(size.Height),
     }
 }

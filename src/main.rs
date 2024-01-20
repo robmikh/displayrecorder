@@ -16,6 +16,7 @@ use video::{
     backend::EncoderBackend,
     encoding_session::{VideoEncoderSessionFactory, VideoEncodingSession},
     mf::encoding_session::MFVideoEncodingSessionFactory,
+    wmt::encoding_session::WMTVideoEncodingSessionFactory,
 };
 use windows::{
     core::{Result, RuntimeName, HSTRING},
@@ -238,7 +239,7 @@ fn create_encoding_session_factory(
     backend: EncoderBackend,
     encoder_index: usize,
     verbose: bool,
-) -> Result<impl VideoEncoderSessionFactory> {
+) -> Result<Box<dyn VideoEncoderSessionFactory>> {
     Ok(match backend {
         EncoderBackend::MediaFoundation => {
             let encoder_devices = VideoEncoderDevice::enumerate()?;
@@ -259,16 +260,16 @@ fn create_encoding_session_factory(
             if verbose {
                 println!("Using: {}", encoder_device.display_name());
             }
-            MFVideoEncodingSessionFactory::new(encoder_device.clone())
+            Box::new(MFVideoEncodingSessionFactory::new(encoder_device.clone()))
         }
-        EncoderBackend::WindowsMediaTranscoding => todo!(),
+        EncoderBackend::WindowsMediaTranscoding => Box::new(WMTVideoEncodingSessionFactory::new()),
     })
 }
 
 fn create_encoding_session(
     d3d_device: ID3D11Device,
     item: GraphicsCaptureItem,
-    factory: &impl VideoEncoderSessionFactory,
+    factory: &Box<dyn VideoEncoderSessionFactory>,
     resolution: SizeInt32,
     bit_rate: u32,
     frame_rate: u32,
