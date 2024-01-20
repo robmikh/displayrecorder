@@ -2,11 +2,14 @@ name: Build and Pack
 
 on:
   push:
+    branches:
+      - packtest
     tags:
       - 'v*'
 
+# Remove flags here that are present in config.toml once rust-lang/cargo#12875 is in
 env:
-  RUSTFLAGS: -Dwarnings
+  RUSTFLAGS: -Dwarnings -C target-feature=+crt-static
 
 jobs:
   pack:
@@ -16,13 +19,11 @@ jobs:
         target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
         rust: [stable]
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
         target: ${{ matrix.target }}
-        profile: minimal
-        override: true
         components: rustfmt
     
     - name: build
@@ -33,7 +34,7 @@ jobs:
       if: matrix.rust == 'stable'
 
     - name: pack
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: 'displayrecorder_${{ matrix.target }}_release'
         path: '.\target\${{ matrix.target }}\release\displayrecorder*'
