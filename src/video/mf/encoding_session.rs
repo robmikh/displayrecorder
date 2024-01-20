@@ -24,7 +24,11 @@ use windows::{
     },
 };
 
-use crate::{capture::CaptureFrameGenerator, d3d::get_d3d_interface_from_object};
+use crate::{
+    capture::CaptureFrameGenerator,
+    d3d::get_d3d_interface_from_object,
+    video::encoding_session::{VideoEncoderSessionFactory, VideoEncodingSession},
+};
 
 use super::{
     encoder::{VideoEncoder, VideoEncoderInputSample},
@@ -32,7 +36,7 @@ use super::{
     processor::VideoProcessor,
 };
 
-pub struct VideoEncodingSession {
+struct MFVideoEncodingSession {
     video_encoder: VideoEncoder,
     capture_session: GraphicsCaptureSession,
     sample_writer: Arc<SampleWriter>,
@@ -58,7 +62,7 @@ struct SampleWriter {
     sink_writer_stream_index: u32,
 }
 
-impl VideoEncodingSession {
+impl MFVideoEncodingSession {
     pub fn new(
         d3d_device: ID3D11Device,
         item: GraphicsCaptureItem,
@@ -100,18 +104,53 @@ impl VideoEncodingSession {
             sample_writer,
         })
     }
+}
 
-    pub fn start(&mut self) -> Result<()> {
+impl VideoEncodingSession for MFVideoEncodingSession {
+    fn start(&mut self) -> Result<()> {
         self.sample_writer.start()?;
         self.capture_session.StartCapture()?;
         assert!(self.video_encoder.try_start()?);
         Ok(())
     }
 
-    pub fn stop(&mut self) -> Result<()> {
+    fn stop(&mut self) -> Result<()> {
         self.video_encoder.stop()?;
         self.sample_writer.stop()?;
         Ok(())
+    }
+}
+
+pub struct MFVideoEncodingSessionFactory {
+    encoder_device: VideoEncoderDevice,
+}
+
+impl MFVideoEncodingSessionFactory {
+    pub fn new(encoder_device: VideoEncoderDevice) -> Self {
+        Self { encoder_device }
+    }
+}
+
+impl VideoEncoderSessionFactory for MFVideoEncodingSessionFactory {
+    fn create_session(
+        &self,
+        d3d_device: ID3D11Device,
+        item: GraphicsCaptureItem,
+        resolution: SizeInt32,
+        bit_rate: u32,
+        frame_rate: u32,
+        stream: IRandomAccessStream,
+    ) -> Result<Box<dyn VideoEncodingSession>> {
+        let session = Box::new(MFVideoEncodingSession::new(
+            d3d_device,
+            item,
+            &self.encoder_device,
+            resolution,
+            bit_rate,
+            frame_rate,
+            stream,
+        )?);
+        Ok(session)
     }
 }
 

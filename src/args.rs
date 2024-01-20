@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::resolution::Resolution;
+use crate::{resolution::Resolution, video::backend::EncoderBackend};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -36,6 +36,10 @@ pub struct Args {
     /// Recording immediately starts. End the recording through console input.
     #[clap(long)]
     pub console_mode: bool,
+
+    /// The backend to use for the video encoder.
+    #[clap(long, default_value_t = EncoderBackend::MediaFoundation)]
+    pub backend: EncoderBackend,
 
     /// The output file that will contain the recording.
     #[clap(default_value = "recording.mp4")]
