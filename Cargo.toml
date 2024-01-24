@@ -22,6 +22,7 @@ features = [
     "Media_Core",
     "Media_MediaProperties",
     "Media_Transcoding",
+    "Security_Authorization_AppCapabilityAccess",
     "Storage",
     "Storage_Streams",
     "Win32_Foundation",

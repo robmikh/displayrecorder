@@ -22,7 +22,10 @@ use windows::{
     core::{h, Result, RuntimeName, HSTRING},
     Foundation::Metadata::ApiInformation,
     Graphics::{
-        Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
+        Capture::{
+            GraphicsCaptureAccess, GraphicsCaptureAccessKind, GraphicsCaptureItem,
+            GraphicsCaptureSession,
+        },
         SizeInt32,
     },
     Storage::{
@@ -204,7 +207,13 @@ fn main() {
         )
         .unwrap_or(false);
         if !borderless {
-            println!("WARNING: Borderless capture is not supported on this build of Windows, ignoring...")
+            let _ =
+                GraphicsCaptureAccess::RequestAccessAsync(GraphicsCaptureAccessKind::Borderless)
+                    .unwrap()
+                    .get()
+                    .unwrap();
+        } else {
+            println!("WARNING: Borderless capture is not supported on this build of Windows, ignoring...");
         }
         borderless
     } else {
