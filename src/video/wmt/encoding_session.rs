@@ -47,13 +47,14 @@ impl VideoEncoderSessionFactory for WMTVideoEncodingSessionFactory {
         &self,
         d3d_device: ID3D11Device,
         item: GraphicsCaptureItem,
+        borderless: bool,
         resolution: SizeInt32,
         bit_rate: u32,
         frame_rate: u32,
         stream: IRandomAccessStream,
     ) -> Result<Box<dyn VideoEncodingSession>> {
         Ok(Box::new(WMTVideoEncodingSession::new(
-            d3d_device, item, resolution, bit_rate, frame_rate, stream,
+            d3d_device, item, borderless, resolution, bit_rate, frame_rate, stream,
         )?))
     }
 }
@@ -73,6 +74,7 @@ impl WMTVideoEncodingSession {
     pub fn new(
         d3d_device: ID3D11Device,
         item: GraphicsCaptureItem,
+        borderless: bool,
         resolution: SizeInt32,
         bit_rate: u32,
         frame_rate: u32,
@@ -111,6 +113,9 @@ impl WMTVideoEncodingSession {
         let stop_signal = sample_generator.stop_signal();
         let mut first_timestamp: Option<TimeSpan> = None;
         let capture_session = sample_generator.capture_session().clone();
+        if borderless {
+            capture_session.SetIsBorderRequired(false)?;
+        }
 
         let stream_source = MediaStreamSource::CreateFromDescriptor(&video_descriptor)?;
         stream_source.SetBufferTime(Duration::from_secs(0).into())?;

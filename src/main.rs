@@ -19,7 +19,7 @@ use video::{
     wmt::encoding_session::WMTVideoEncodingSessionFactory,
 };
 use windows::{
-    core::{Result, RuntimeName, HSTRING},
+    core::{h, Result, RuntimeName, HSTRING},
     Foundation::Metadata::ApiInformation,
     Graphics::{
         Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
@@ -59,6 +59,7 @@ fn run(
     frame_rate: u32,
     resolution: Resolution,
     encoder_index: usize,
+    borderless: bool,
     verbose: bool,
     wait_for_debugger: bool,
     console_mode: bool,
@@ -137,6 +138,7 @@ fn run(
         let mut session = create_encoding_session(
             d3d_device,
             item,
+            borderless,
             &session_factory,
             resolution,
             bit_rate,
@@ -194,6 +196,21 @@ fn main() {
     let encoder_index: usize = args.encoder;
     let backend: EncoderBackend = args.backend;
 
+    let borderless = if args.borderless {
+        // Make sure the machine we're running on supports borderless capture
+        let borderless = ApiInformation::IsPropertyPresent(
+            &HSTRING::from(GraphicsCaptureSession::NAME),
+            h!("IsBorderRequired"),
+        )
+        .unwrap_or(false);
+        if !borderless {
+            println!("WARNING: Borderless capture is not supported on this build of Windows, ignoring...")
+        }
+        borderless
+    } else {
+        false
+    };
+
     // Validate some of the params
     if !validate_path(output_path) {
         exit_with_error("Invalid path specified!");
@@ -206,6 +223,7 @@ fn main() {
         frame_rate,
         resolution,
         encoder_index,
+        borderless,
         verbose | wait_for_debugger,
         wait_for_debugger,
         console_mode,
@@ -269,13 +287,16 @@ fn create_encoding_session_factory(
 fn create_encoding_session(
     d3d_device: ID3D11Device,
     item: GraphicsCaptureItem,
+    borderless: bool,
     factory: &Box<dyn VideoEncoderSessionFactory>,
     resolution: SizeInt32,
     bit_rate: u32,
     frame_rate: u32,
     stream: IRandomAccessStream,
 ) -> Result<Box<dyn VideoEncodingSession>> {
-    let result = factory.create_session(d3d_device, item, resolution, bit_rate, frame_rate, stream);
+    let result = factory.create_session(
+        d3d_device, item, borderless, resolution, bit_rate, frame_rate, stream,
+    );
     if result.is_err() {
         println!("Error during encoder setup, try another set of encoding settings.");
     }

@@ -10,6 +10,7 @@ pub trait VideoEncoderSessionFactory {
         &self,
         d3d_device: ID3D11Device,
         item: GraphicsCaptureItem,
+        borderless: bool,
         resolution: SizeInt32,
         bit_rate: u32,
         frame_rate: u32,

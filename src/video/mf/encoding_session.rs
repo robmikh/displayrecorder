@@ -70,6 +70,7 @@ impl MFVideoEncodingSession {
     pub fn new(
         d3d_device: ID3D11Device,
         item: GraphicsCaptureItem,
+        borderless: bool,
         encoder_device: &VideoEncoderDevice,
         resolution: SizeInt32,
         bit_rate: u32,
@@ -92,6 +93,9 @@ impl MFVideoEncodingSession {
 
         let mut sample_generator = SampleGenerator::new(d3d_device, item, input_size, output_size)?;
         let capture_session = sample_generator.capture_session().clone();
+        if borderless {
+            capture_session.SetIsBorderRequired(false)?;
+        }
         video_encoder.set_sample_requested_callback(
             move || -> Result<Option<VideoEncoderInputSample>> { sample_generator.generate() },
         );
@@ -140,6 +144,7 @@ impl VideoEncoderSessionFactory for MFVideoEncodingSessionFactory {
         &self,
         d3d_device: ID3D11Device,
         item: GraphicsCaptureItem,
+        borderless: bool,
         resolution: SizeInt32,
         bit_rate: u32,
         frame_rate: u32,
@@ -148,6 +153,7 @@ impl VideoEncoderSessionFactory for MFVideoEncodingSessionFactory {
         let session = Box::new(MFVideoEncodingSession::new(
             d3d_device,
             item,
+            borderless,
             &self.encoder_device,
             resolution,
             bit_rate,

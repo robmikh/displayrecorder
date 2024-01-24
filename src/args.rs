@@ -25,6 +25,10 @@ pub struct Args {
     #[clap(short, long, default_value_t = 0)]
     pub encoder: usize,
 
+    /// Disables the yellow capture border (only available on Windows 11).
+    #[clap(long)]
+    pub borderless: bool,
+
     /// Enables verbose (debug) output.
     #[clap(short, long)]
     pub verbose: bool,
