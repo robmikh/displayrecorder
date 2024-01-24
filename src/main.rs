@@ -206,7 +206,7 @@ fn main() {
             h!("IsBorderRequired"),
         )
         .unwrap_or(false);
-        if !borderless {
+        if borderless {
             let _ =
                 GraphicsCaptureAccess::RequestAccessAsync(GraphicsCaptureAccessKind::Borderless)
                     .unwrap()
