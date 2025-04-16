@@ -1,7 +1,7 @@
 use std::{thread::JoinHandle, time::Duration};
 
 use windows::{
-    core::{h, Result, HSTRING},
+    core::{h, Result},
     Foundation::{TimeSpan, TypedEventHandler},
     Graphics::{
         Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
@@ -237,7 +237,7 @@ impl VideoEncodingSession for WMTVideoEncodingSession {
                     Err(_) => {
                         return Err(windows::core::Error::new(
                             E_UNEXPECTED,
-                            HSTRING::from("Unable to create the encoder thread!"),
+                            "Unable to create the encoder thread!",
                         ));
                     }
                 }
@@ -254,7 +254,7 @@ impl VideoEncodingSession for WMTVideoEncodingSession {
                 Ok(result) => result,
                 Err(_) => Err(windows::core::Error::new(
                     E_UNEXPECTED,
-                    HSTRING::from("Encoder thread failed unexpectedly!"),
+                    "Encoder thread failed unexpectedly!",
                 )),
             }
         } else {

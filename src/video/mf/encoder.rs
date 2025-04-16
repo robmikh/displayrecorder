@@ -7,7 +7,7 @@ use std::{
 };
 
 use windows::{
-    core::{ComInterface, Error, Result},
+    core::{Interface, Error, Result},
     Foundation::TimeSpan,
     Graphics::SizeInt32,
     Win32::{
@@ -216,7 +216,7 @@ impl VideoEncoder {
         } else {
             return Err(Error::new(
                 MF_E_TRANSFORM_TYPE_NOT_SET,
-                "No suitable input type found! Try a different set of encoding settings.".into(),
+                "No suitable input type found! Try a different set of encoding settings.",
             ));
         }
 

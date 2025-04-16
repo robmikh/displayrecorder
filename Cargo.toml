@@ -7,9 +7,10 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.4.3", features = ["derive"] }
+windows-numerics = "0.2.0"
 
 [dependencies.windows]
-version = "0.51.1"
+version = "0.61.1"
 features = [
     "Foundation",
     "Foundation_Metadata",
@@ -23,6 +24,7 @@ features = [
     "Media_Transcoding",
     "Security_Authorization_AppCapabilityAccess",
     "Storage",
+    "Storage_Search",
     "Storage_Streams",
     "Win32_Foundation",
     "Win32_Graphics_Direct3D",

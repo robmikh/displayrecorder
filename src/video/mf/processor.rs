@@ -1,6 +1,5 @@
 use windows::{
-    core::{ComInterface, Result},
-    Foundation::Numerics::Vector2,
+    core::{Interface, Result},
     Graphics::{RectInt32, SizeInt32},
     Win32::{
         Foundation::RECT,
@@ -22,6 +21,7 @@ use windows::{
         },
     },
 };
+use windows_numerics::Vector2;
 
 pub struct VideoProcessor {
     _d3d_device: ID3D11Device,

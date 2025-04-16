@@ -32,7 +32,7 @@ use windows::{
         CreationCollisionOption, FileAccessMode, StorageFolder, Streams::IRandomAccessStream,
     },
     Win32::{
-        Foundation::{HWND, MAX_PATH},
+        Foundation::MAX_PATH,
         Graphics::Direct3D11::ID3D11Device,
         Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
         Storage::FileSystem::GetFullPathNameW,
@@ -100,7 +100,7 @@ fn run(
     }
 
     // Get the display handle using the provided index
-    let display_handle = get_display_handle_from_index(display_index)
+    let display_handle = get_display_handle_from_index(display_index)?
         .expect("The provided display index was out of bounds!");
     let item = create_capture_item_for_monitor(display_handle)?;
 
@@ -349,7 +349,7 @@ fn pump_messages<F: FnMut() -> Result<bool>>(mut hot_key_callback: F) -> Result<
     println!("Press SHIFT+CTRL+R to start/stop the recording...");
     unsafe {
         let mut message = MSG::default();
-        while GetMessageW(&mut message, HWND(0), 0, 0).into() {
+        while GetMessageW(&mut message, None, 0, 0).into() {
             if message.message == WM_HOTKEY && hot_key_callback()? {
                 break;
             }

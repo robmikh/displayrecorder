@@ -1,18 +1,18 @@
-use windows::Win32::{
-    Foundation::{BOOL, LPARAM, RECT},
+use windows::{core::{BOOL, Result}, Win32::{
+    Foundation::{LPARAM, RECT},
     Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR},
-};
+}};
 
-pub fn get_display_handle_from_index(index: usize) -> Option<HMONITOR> {
-    let displays = enumerate_displays();
-    displays.get(index).copied()
+pub fn get_display_handle_from_index(index: usize) -> Result<Option<HMONITOR>> {
+    let displays = enumerate_displays()?;
+    Ok(displays.get(index).copied())
 }
 
-fn enumerate_displays() -> Vec<HMONITOR> {
+fn enumerate_displays() -> Result<Vec<HMONITOR>> {
     unsafe {
         let displays = Box::into_raw(Box::default());
-        EnumDisplayMonitors(HDC(0), None, Some(enum_monitor), LPARAM(displays as isize));
-        *Box::from_raw(displays)
+        EnumDisplayMonitors(None, None, Some(enum_monitor), LPARAM(displays as isize)).ok()?;
+        Ok(*Box::from_raw(displays))
     }
 }
 

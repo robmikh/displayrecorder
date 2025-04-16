@@ -1,5 +1,5 @@
 use windows::{
-    core::{ComInterface, Result},
+    core::{Interface, Result},
     Win32::Media::MediaFoundation::{
         IMFActivate, IMFTransform, MFMediaType_Video, MFT_FRIENDLY_NAME_Attribute,
         MFVideoFormat_H264, MFT_CATEGORY_VIDEO_ENCODER, MFT_ENUM_FLAG_HARDWARE,
