@@ -19,7 +19,6 @@ use video::{
     wmt::encoding_session::WMTVideoEncodingSessionFactory,
 };
 use windows::{
-    core::{h, Result, RuntimeName, HSTRING},
     Foundation::Metadata::ApiInformation,
     Graphics::{
         Capture::{
@@ -34,18 +33,19 @@ use windows::{
     Win32::{
         Foundation::MAX_PATH,
         Graphics::Direct3D11::ID3D11Device,
-        Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL},
+        Media::MediaFoundation::{MFSTARTUP_FULL, MFStartup},
         Storage::FileSystem::GetFullPathNameW,
         System::{
             Diagnostics::Debug::{DebugBreak, IsDebuggerPresent},
             Threading::GetCurrentProcessId,
-            WinRT::{RoInitialize, RO_INIT_MULTITHREADED},
+            WinRT::{RO_INIT_MULTITHREADED, RoInitialize},
         },
         UI::{
             Input::KeyboardAndMouse::{MOD_CONTROL, MOD_SHIFT},
             WindowsAndMessaging::{DispatchMessageW, GetMessageW, MSG, WM_HOTKEY},
         },
     },
+    core::{HSTRING, Result, RuntimeName, h},
 };
 
 use crate::{
@@ -89,7 +89,9 @@ fn run(
 
     // Check to make sure Windows.Graphics.Capture is available
     if !required_capture_features_supported()? {
-        exit_with_error("The required screen capture features are not supported on this device for this release of Windows!\nPlease update your operating system (minimum: Windows 10 Version 1903, Build 18362).");
+        exit_with_error(
+            "The required screen capture features are not supported on this device for this release of Windows!\nPlease update your operating system (minimum: Windows 10 Version 1903, Build 18362).",
+        );
     }
 
     if verbose {
@@ -213,7 +215,9 @@ fn main() {
                     .get()
                     .unwrap();
         } else {
-            println!("WARNING: Borderless capture is not supported on this build of Windows, ignoring...");
+            println!(
+                "WARNING: Borderless capture is not supported on this build of Windows, ignoring..."
+            );
         }
         borderless
     } else {

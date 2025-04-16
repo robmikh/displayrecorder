@@ -1,7 +1,6 @@
 use std::{thread::JoinHandle, time::Duration};
 
 use windows::{
-    core::{h, Result},
     Foundation::{TimeSpan, TypedEventHandler},
     Graphics::{
         Capture::{GraphicsCaptureItem, GraphicsCaptureSession},
@@ -21,6 +20,7 @@ use windows::{
         Foundation::E_UNEXPECTED,
         Graphics::Direct3D11::{ID3D11Device, ID3D11Texture2D},
     },
+    core::{Result, h},
 };
 
 use crate::{

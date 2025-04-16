@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use windows::{
-    core::{Result, HSTRING},
     Foundation::TimeSpan,
     Graphics::{
         Capture::{Direct3D11CaptureFrame, GraphicsCaptureItem, GraphicsCaptureSession},
@@ -11,9 +10,9 @@ use windows::{
     Win32::{
         Graphics::{
             Direct3D11::{
-                ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11Texture2D,
                 D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX,
-                D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
+                D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, ID3D11Device, ID3D11DeviceContext,
+                ID3D11RenderTargetView, ID3D11Texture2D,
             },
             Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_NV12, DXGI_SAMPLE_DESC},
         },
@@ -22,15 +21,16 @@ use windows::{
             MFCreateMFByteStreamOnStreamEx, MFCreateSinkWriterFromURL,
         },
     },
+    core::{HSTRING, Result},
 };
 
 use crate::{
     capture::CaptureFrameGenerator,
     d3d::get_d3d_interface_from_object,
     video::{
+        CLEAR_COLOR,
         encoding_session::{VideoEncoderSessionFactory, VideoEncodingSession},
         util::ensure_even_size,
-        CLEAR_COLOR,
     },
 };
 

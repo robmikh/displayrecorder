@@ -1,7 +1,6 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, channel};
 
 use windows::{
-    core::{IInspectable, Result},
     Foundation::TypedEventHandler,
     Graphics::{
         Capture::{
@@ -15,6 +14,7 @@ use windows::{
         Graphics::{Direct3D11::ID3D11Device, Gdi::HMONITOR},
         System::WinRT::Graphics::Capture::IGraphicsCaptureItemInterop,
     },
+    core::{IInspectable, Result},
 };
 
 use crate::d3d::create_direct3d_device;

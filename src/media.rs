@@ -1,9 +1,9 @@
 use windows::{
-    core::{Array, Result, GUID},
     Win32::Media::MediaFoundation::{
-        IMFActivate, IMFAttributes, MFTEnumEx, MFT_ENUM_FLAG, MFT_REGISTER_TYPE_INFO,
-        MF_E_ATTRIBUTENOTFOUND,
+        IMFActivate, IMFAttributes, MF_E_ATTRIBUTENOTFOUND, MFT_ENUM_FLAG, MFT_REGISTER_TYPE_INFO,
+        MFTEnumEx,
     },
+    core::{Array, GUID, Result},
 };
 
 pub fn enumerate_mfts(
@@ -73,9 +73,9 @@ unsafe fn MFSetAttribute2UINT32asUINT64(
     key: &GUID,
     high: u32,
     low: u32,
-) -> Result<()> { unsafe {
-    attributes.SetUINT64(key, pack_2_u32_as_u64(high, low))
-}}
+) -> Result<()> {
+    unsafe { attributes.SetUINT64(key, pack_2_u32_as_u64(high, low)) }
+}
 
 #[allow(non_snake_case)]
 pub unsafe fn MFSetAttributeSize(
@@ -83,9 +83,9 @@ pub unsafe fn MFSetAttributeSize(
     key: &GUID,
     width: u32,
     height: u32,
-) -> Result<()> { unsafe {
-    MFSetAttribute2UINT32asUINT64(attributes, key, width, height)
-}}
+) -> Result<()> {
+    unsafe { MFSetAttribute2UINT32asUINT64(attributes, key, width, height) }
+}
 
 #[allow(non_snake_case)]
 pub unsafe fn MFSetAttributeRatio(
@@ -93,6 +93,6 @@ pub unsafe fn MFSetAttributeRatio(
     key: &GUID,
     numerator: u32,
     denominator: u32,
-) -> Result<()> { unsafe {
-    MFSetAttribute2UINT32asUINT64(attributes, key, numerator, denominator)
-}}
+) -> Result<()> {
+    unsafe { MFSetAttribute2UINT32asUINT64(attributes, key, numerator, denominator) }
+}

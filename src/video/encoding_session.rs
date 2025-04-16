@@ -1,8 +1,8 @@
 use windows::{
-    core::Result,
     Graphics::{Capture::GraphicsCaptureItem, SizeInt32},
     Storage::Streams::IRandomAccessStream,
     Win32::Graphics::Direct3D11::ID3D11Device,
+    core::Result,
 };
 
 pub trait VideoEncoderSessionFactory {

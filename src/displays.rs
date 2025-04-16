@@ -1,7 +1,10 @@
-use windows::{core::{BOOL, Result}, Win32::{
-    Foundation::{LPARAM, RECT},
-    Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR},
-}};
+use windows::{
+    Win32::{
+        Foundation::{LPARAM, RECT},
+        Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR},
+    },
+    core::{BOOL, Result},
+};
 
 pub fn get_display_handle_from_index(index: usize) -> Result<Option<HMONITOR>> {
     let displays = enumerate_displays()?;
