@@ -3,8 +3,7 @@ name = "displayrecorder"
 version = "0.5.1"
 authors = ["robmikh <rob.mikh@outlook.com>"]
 description = "A utility to record displays."
-edition = "2021"
-resolver = "2"
+edition = "2024"
 
 [dependencies]
 clap = { version = "4.4.3", features = ["derive"] }
